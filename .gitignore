@@ -1,0 +1,13 @@
+.gradle/
+build/
+*/build/
+**/build/
+local.properties
+.idea/
+.kotlin/
+.DS_Store
+captures/
+xcuserdata/
+*.xcworkspace/xcshareddata/
+Pods/
+.konan/
