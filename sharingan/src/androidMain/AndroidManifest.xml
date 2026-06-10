@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Declared so the capture notification can show on API 33+; the host
+         app is responsible for requesting it at runtime (see README). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application>
         <provider
             android:name="dev.sharingan.internal.SharinganInitProvider"
             android:authorities="${applicationId}.sharingan-init"
+            android:exported="false" />
+
+        <activity
+            android:name="dev.sharingan.SharinganActivity"
+            android:exported="false"
+            android:label="Sharingan"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Sharingan" />
+
+        <receiver
+            android:name="dev.sharingan.internal.SharinganNotificationReceiver"
             android:exported="false" />
     </application>
 

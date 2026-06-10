@@ -25,7 +25,9 @@ internal object SharinganAndroid {
  */
 public class SharinganInitProvider : ContentProvider() {
     override fun onCreate(): Boolean {
-        SharinganAndroid.appContext = context?.applicationContext
+        val appContext = context?.applicationContext ?: return true
+        SharinganAndroid.appContext = appContext
+        CaptureNotification.start(appContext)
         return true
     }
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Sharingan" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0E0F13</item>
+    </style>
+</resources>
