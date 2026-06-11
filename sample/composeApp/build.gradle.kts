@@ -71,4 +71,9 @@ android {
             isMinifyEnabled = false
         }
     }
+
+    lint {
+        // AGP 8.13's bundled lint can't read Kotlin 2.4 metadata yet.
+        checkReleaseBuilds = false
+    }
 }
