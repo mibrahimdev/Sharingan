@@ -8,14 +8,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import dev.sharingan.BleEvent
-import dev.sharingan.HttpEvent
-import dev.sharingan.MqttEvent
 import dev.sharingan.R
 import dev.sharingan.Sharingan
 import dev.sharingan.SharinganActivity
 import dev.sharingan.SharinganEvent
-import dev.sharingan.shortLabel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,9 +48,7 @@ internal object CaptureNotification {
                     .combine(Sharingan.store.isRecording) { events, recording -> events to recording }
                     .conflate()
                     .collect { (events, recording) ->
-                        if (enabled && events.isNotEmpty()) {
-                            post(context, events, recording)
-                        }
+                        if (enabled) post(context, events, recording)
                     }
             }
         }
@@ -63,13 +57,8 @@ internal object CaptureNotification {
     private fun post(context: Context, events: List<SharinganEvent>, recording: Boolean) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (!manager.areNotificationsEnabled()) return
+        val content = notificationContentOf(events, recording) ?: return
         ensureChannel(manager)
-
-        val http = events.count { it is HttpEvent }
-        val mqtt = events.count { it is MqttEvent }
-        val ble = events.count { it is BleEvent }
-        val stateLabel = if (recording) "Capturing" else "Paused"
-        val ticker = events.takeLast(3).reversed().joinToString("\n") { tickerLine(it) }
 
         val openIntent = PendingIntent.getActivity(
             context,
@@ -91,18 +80,14 @@ internal object CaptureNotification {
             else Notification.Builder(context)
         val builder = base
             .setSmallIcon(R.drawable.sharingan_ic_notification)
-            .setContentTitle("Sharingan — $stateLabel · ${events.size} events")
-            .setContentText("HTTP $http · MQTT $mqtt · BLE $ble")
-            .setStyle(Notification.BigTextStyle().bigText("HTTP $http · MQTT $mqtt · BLE $ble\n$ticker"))
+            .setContentTitle(content.title)
+            .setContentText(content.countsLine)
+            .setStyle(Notification.BigTextStyle().bigText(content.expandedText))
             .setContentIntent(openIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .addAction(
-                Notification.Action.Builder(
-                    null,
-                    if (recording) "Pause" else "Resume",
-                    toggleIntent,
-                ).build(),
+                Notification.Action.Builder(null, content.actionLabel, toggleIntent).build(),
             )
 
         try {
@@ -111,12 +96,6 @@ internal object CaptureNotification {
             // Missing POST_NOTIFICATIONS or any notification failure must never
             // crash the host app; capture continues silently.
         }
-    }
-
-    private fun tickerLine(event: SharinganEvent): String = when (event) {
-        is HttpEvent -> "${event.method} ${event.path} → ${event.statusCode ?: "ERR"}"
-        is MqttEvent -> "${event.direction.shortLabel} ${event.topic}"
-        is BleEvent -> "${event.operation.name} ${event.characteristic ?: event.device}"
     }
 
     private fun ensureChannel(manager: NotificationManager) {

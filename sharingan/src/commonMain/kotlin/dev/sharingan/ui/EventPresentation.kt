@@ -1,15 +1,9 @@
 package dev.sharingan.ui
 
 import androidx.compose.ui.graphics.Color
-import dev.sharingan.BleEvent
 import dev.sharingan.BleOperation
-import dev.sharingan.HttpEvent
 import dev.sharingan.MqttDirection
-import dev.sharingan.MqttEvent
 import dev.sharingan.SharinganEvent
-import dev.sharingan.formatBytes
-import dev.sharingan.internal.formatClockTime
-import dev.sharingan.shortLabel
 
 /** A color plus its soft (translucent) background companion. */
 internal data class Tint(val color: Color, val soft: Color)
@@ -29,6 +23,8 @@ internal data class EventPresentation(
     val railColor: Color,
     val isFailure: Boolean,
 )
+
+// Palette helpers shared by the ProtocolDescriptors and detail bodies.
 
 internal fun SharinganColors.httpStatusTint(status: Int?): Tint = when {
     status == null -> Tint(err, errSoft)
@@ -64,66 +60,10 @@ internal fun SharinganColors.bleOperationTint(operation: BleOperation): Tint = w
 }
 
 internal fun presentationOf(colors: SharinganColors, event: SharinganEvent): EventPresentation =
-    when (event) {
-        is HttpEvent -> {
-            val statusTint = colors.httpStatusTint(event.statusCode)
-            EventPresentation(
-                lead = event.method.uppercase(),
-                leadTint = colors.httpMethodTint(event.method),
-                main = event.path,
-                sub = event.host,
-                status = event.statusCode?.toString() ?: "ERR",
-                statusTint = statusTint,
-                right = event.durationMillis?.let { "${it}ms" },
-                rightColor = null,
-                sizeLabel = formatBytes(event.responseSizeBytes),
-                clockTime = formatClockTime(event.timestampMillis),
-                railColor = statusTint.color,
-                isFailure = event.isFailure,
-            )
-        }
-        is MqttEvent -> {
-            val dirTint = colors.mqttDirectionTint(event.direction)
-            EventPresentation(
-                lead = event.direction.shortLabel,
-                leadTint = dirTint,
-                main = event.topic,
-                sub = if (event.retained) "retained" else null,
-                status = "Q${event.qos}",
-                statusTint = Tint(colors.textDim, colors.faint),
-                right = if (event.isFailure) "fail" else "ok",
-                rightColor = if (event.isFailure) colors.err else colors.textDim,
-                sizeLabel = formatBytes(event.payloadSizeBytes),
-                clockTime = formatClockTime(event.timestampMillis),
-                railColor = if (event.isFailure) colors.err else dirTint.color,
-                isFailure = event.isFailure,
-            )
-        }
-        is BleEvent -> {
-            val opTint = colors.bleOperationTint(event.operation)
-            EventPresentation(
-                lead = event.operation.name,
-                leadTint = opTint,
-                main = event.characteristic ?: event.device,
-                sub = event.uuid ?: event.device,
-                status = event.uuid,
-                statusTint = Tint(colors.textDim, colors.faint),
-                right = if (event.isFailure) "err" else formatBytes(event.sizeBytes),
-                rightColor = if (event.isFailure) colors.err else colors.textDim,
-                sizeLabel = formatBytes(event.sizeBytes),
-                clockTime = formatClockTime(event.timestampMillis),
-                railColor = opTint.color,
-                isFailure = event.isFailure,
-            )
-        }
-    }
+    descriptorOf(event).presentation(colors, event)
 
 /** `requests` / `messages` / `operations` — the column-header noun. */
-internal fun Protocol.eventNoun(): String = when (this) {
-    Protocol.HTTP -> "requests"
-    Protocol.MQTT -> "messages"
-    Protocol.BLE -> "operations"
-}
+internal fun Protocol.eventNoun(): String = descriptorOf(this).eventNoun
 
 /** `request` / `message` / `operation` — singular, for the share sheet title. */
 internal fun Protocol.eventNounSingular(): String = eventNoun().dropLast(1)

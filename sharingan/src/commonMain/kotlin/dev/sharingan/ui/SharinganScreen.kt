@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import dev.sharingan.HttpEvent
 import dev.sharingan.Sharingan
 import dev.sharingan.SharinganEvent
-import dev.sharingan.SharinganExport
 import dev.sharingan.SharinganStore
 import kotlinx.coroutines.delay
 
@@ -69,24 +68,11 @@ public fun SharinganScreen(
         }
     }
 
-    fun sharePayload(action: ShareAction, scope: ShareScope): String {
-        val single = if (scope == ShareScope.SINGLE) selectedEvent else null
-        return when (action) {
-            ShareAction.COPY_AGENT, ShareAction.SYSTEM_SHARE ->
-                single?.let { SharinganExport.agentMarkdown(it) } ?: SharinganExport.agentMarkdown(tabEvents)
-            ShareAction.COPY_HUMAN ->
-                (single as? HttpEvent)?.let { SharinganExport.curl(it) }
-                    ?: SharinganExport.summary(single?.let { listOf(it) } ?: tabEvents)
-            ShareAction.COPY_RAW ->
-                single?.let { SharinganExport.json(it) } ?: SharinganExport.sessionJson(tabEvents)
-        }
-    }
-
     val shareState = shareScope?.let { scope ->
         ShareSheetState(
             scope = scope,
             protocol = protocol,
-            preview = sharePayload(ShareAction.COPY_AGENT, scope).take(400),
+            preview = resolveShare(ShareAction.COPY_AGENT, scope, selectedEvent, tabEvents).payload.take(400),
             curlAvailable = scope == ShareScope.SINGLE && selectedEvent is HttpEvent,
         )
     }
@@ -116,23 +102,12 @@ public fun SharinganScreen(
             onShareSingle = { shareScope = ShareScope.SINGLE },
             onShareAll = { shareScope = ShareScope.ALL },
             onShareAction = { action ->
-                val scope = shareScope ?: ShareScope.ALL
-                val payload = sharePayload(action, scope)
-                when (action) {
-                    ShareAction.COPY_AGENT -> {
-                        dev.sharingan.internal.copyToClipboard(payload)
-                        toastMessage = "Copied for agent ✓"
-                    }
-                    ShareAction.COPY_HUMAN -> {
-                        dev.sharingan.internal.copyToClipboard(payload)
-                        toastMessage = "Copied ✓"
-                    }
-                    ShareAction.COPY_RAW -> {
-                        dev.sharingan.internal.copyToClipboard(payload)
-                        toastMessage = "Copied JSON ✓"
-                    }
-                    ShareAction.SYSTEM_SHARE -> dev.sharingan.internal.shareText(payload)
+                val resolution = resolveShare(action, shareScope ?: ShareScope.ALL, selectedEvent, tabEvents)
+                when (resolution.delivery) {
+                    ShareDelivery.CLIPBOARD -> dev.sharingan.internal.copyToClipboard(resolution.payload)
+                    ShareDelivery.SYSTEM_SHARE -> dev.sharingan.internal.shareText(resolution.payload)
                 }
+                resolution.toast?.let { toastMessage = it }
                 shareScope = null
             },
             onShareDismiss = { shareScope = null },

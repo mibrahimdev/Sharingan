@@ -35,12 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.sharingan.BleEvent
-import dev.sharingan.HttpEvent
-import dev.sharingan.MqttEvent
 import dev.sharingan.SharinganEvent
-import dev.sharingan.formatBytes
-import dev.sharingan.shortLabel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -55,11 +50,7 @@ internal fun DetailScreenContent(
         DetailHeader(onBack = onBack, onShare = onShare)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             TitleBlock(event)
-            when (event) {
-                is HttpEvent -> HttpDetailBody(event)
-                is MqttEvent -> MqttDetailBody(event)
-                is BleEvent -> BleDetailBody(event)
-            }
+            descriptorOf(event).DetailBody(event)
             Spacer(Modifier.height(28.dp))
         }
     }
@@ -143,10 +134,10 @@ internal fun BadgeChip(label: String, tint: Tint) {
     )
 }
 
-// ── shared section scaffolding ───────────────────────────────
+// ── shared section scaffolding (used by the ProtocolDescriptors) ──
 
 @Composable
-private fun Section(
+internal fun Section(
     label: String,
     right: String? = null,
     content: @Composable () -> Unit,
@@ -176,7 +167,7 @@ private fun Section(
 }
 
 @Composable
-private fun KeyValueRow(key: String, value: String, valueColor: Color? = null) {
+internal fun KeyValueRow(key: String, value: String, valueColor: Color? = null) {
     val colors = LocalSharinganColors.current
     Column {
         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -197,7 +188,15 @@ private fun KeyValueRow(key: String, value: String, valueColor: Color? = null) {
 }
 
 @Composable
-private fun BodyBlock(raw: String) {
+internal fun ErrorSection(error: String) {
+    val colors = LocalSharinganColors.current
+    Section("Error") {
+        Text(error, color = colors.err, fontSize = 11.5.sp, fontFamily = MonoFont, lineHeight = 17.sp)
+    }
+}
+
+@Composable
+internal fun BodyBlock(raw: String) {
     val colors = LocalSharinganColors.current
     Box(
         Modifier
@@ -241,153 +240,6 @@ private fun rememberAnnotatedJson(raw: String, colors: SharinganColors): Annotat
             }
         }
     }
-
-// ── protocol-specific bodies ─────────────────────────────────
-
-@Composable
-private fun HttpDetailBody(event: HttpEvent) {
-    val colors = LocalSharinganColors.current
-    val statusTint = colors.httpStatusTint(event.statusCode)
-
-    Section("Summary") {
-        Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SummaryCard("Status", event.statusCode?.toString() ?: "ERR", statusTint.color, Modifier.weight(1f))
-            SummaryCard("Duration", event.durationMillis?.let { "$it ms" } ?: "—", colors.text, Modifier.weight(1f))
-            SummaryCard("Size", formatBytes(event.responseSizeBytes), colors.text, Modifier.weight(1f))
-        }
-    }
-    event.error?.let { ErrorSection(it) }
-    if (event.timing.isNotEmpty()) {
-        val total = event.timing.sumOf { it.millis }.coerceAtLeast(1)
-        Section("Timing", right = "$total ms") {
-            TimingWaterfall(event)
-        }
-    }
-    if (event.requestHeaders.isNotEmpty()) {
-        Section("Request headers") {
-            event.requestHeaders.forEach { (k, v) -> KeyValueRow(k, v) }
-        }
-    }
-    if (event.responseHeaders.isNotEmpty()) {
-        Section("Response headers") {
-            event.responseHeaders.forEach { (k, v) -> KeyValueRow(k, v) }
-        }
-    }
-    event.requestBody?.takeIf { it.isNotBlank() }?.let {
-        Section("Request body") { BodyBlock(it) }
-    }
-    event.responseBody?.takeIf { it.isNotBlank() }?.let {
-        Section("Response body", right = event.contentType) { BodyBlock(it) }
-    }
-}
-
-@Composable
-private fun SummaryCard(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
-    val colors = LocalSharinganColors.current
-    Column(
-        modifier
-            .clip(RoundedCornerShape(9.dp))
-            .background(colors.surface)
-            .border(1.dp, colors.border, RoundedCornerShape(9.dp))
-            .padding(horizontal = 10.dp, vertical = 9.dp),
-    ) {
-        Text(label.uppercase(), color = colors.textDim, fontSize = 10.sp, fontFamily = MonoFont, letterSpacing = 0.5.sp)
-        Spacer(Modifier.height(3.dp))
-        Text(value, color = valueColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = MonoFont, maxLines = 1)
-    }
-}
-
-@Composable
-private fun TimingWaterfall(event: HttpEvent) {
-    val colors = LocalSharinganColors.current
-    val palette = listOf(colors.textDim, colors.info, colors.violet, colors.warn, colors.ok)
-    val total = event.timing.sumOf { it.millis }.coerceAtLeast(1)
-    Column {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 5.dp, bottom = 9.dp)
-                .height(9.dp)
-                .clip(RoundedCornerShape(5.dp))
-                .background(colors.surface2),
-        ) {
-            event.timing.forEachIndexed { index, phase ->
-                if (phase.millis > 0) {
-                    Box(
-                        Modifier
-                            .weight(phase.millis.toFloat())
-                            .fillMaxSize()
-                            .background(palette[index % palette.size]),
-                    )
-                }
-            }
-        }
-        event.timing.forEachIndexed { index, phase ->
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 2.5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    Modifier.size(7.dp).clip(RoundedCornerShape(2.dp)).background(palette[index % palette.size]),
-                )
-                Text(phase.label, color = colors.textMid, fontSize = 11.sp, fontFamily = MonoFont, modifier = Modifier.weight(1f))
-                Text("${phase.millis} ms", color = colors.text, fontSize = 11.sp, fontFamily = MonoFont, maxLines = 1)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ErrorSection(error: String) {
-    val colors = LocalSharinganColors.current
-    Section("Error") {
-        Text(error, color = colors.err, fontSize = 11.5.sp, fontFamily = MonoFont, lineHeight = 17.sp)
-    }
-}
-
-@Composable
-private fun MqttDetailBody(event: MqttEvent) {
-    val colors = LocalSharinganColors.current
-    val dirTint = colors.mqttDirectionTint(event.direction)
-    Section("Message") {
-        KeyValueRow("Direction", event.direction.shortLabel, dirTint.color)
-        KeyValueRow("Topic", event.topic)
-        KeyValueRow("QoS", event.qos.toString())
-        KeyValueRow("Retained", event.retained.toString())
-        KeyValueRow("Payload size", formatBytes(event.payloadSizeBytes))
-        KeyValueRow(
-            "Result",
-            if (event.isFailure) "fail" else "ok",
-            if (event.isFailure) colors.err else colors.ok,
-        )
-    }
-    event.error?.let { ErrorSection(it) }
-    event.payload?.takeIf { it.isNotBlank() }?.let {
-        Section("Payload") { BodyBlock(it) }
-    }
-}
-
-@Composable
-private fun BleDetailBody(event: BleEvent) {
-    val colors = LocalSharinganColors.current
-    Section("Operation") {
-        KeyValueRow("Type", event.operation.name, colors.bleOperationTint(event.operation).color)
-        KeyValueRow("Device", event.device)
-        event.characteristic?.let { KeyValueRow("Characteristic", it) }
-        event.uuid?.let { KeyValueRow("UUID", it) }
-        KeyValueRow("Size", formatBytes(event.sizeBytes))
-        KeyValueRow(
-            "Result",
-            if (event.isFailure) "fail" else "ok",
-            if (event.isFailure) colors.err else colors.ok,
-        )
-    }
-    event.error?.let { ErrorSection(it) }
-    event.payload?.takeIf { it.isNotBlank() }?.let {
-        Section("Decoded value") { BodyBlock(it) }
-    }
-}
 
 // ── Previews ─────────────────────────────────────────────────
 
