@@ -6,13 +6,39 @@ Sharingan is an on-device debug logger. It captures protocol traffic while you u
 
 > The name is a Naruto reference: the eye that sees everything.
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home-dark.png" width="260" alt="Sharingan home — HTTP tab, dark mode, with 401 and 500 failure rails"/></td>
+    <td align="center"><img src="docs/screenshots/detail-error.png" width="260" alt="Detail screen of a 500 error — summary cards, timing waterfall, headers, syntax-colored JSON body"/></td>
+    <td align="center"><img src="docs/screenshots/share-sheet.png" width="260" alt="Share sheet with Copy for AI agent as the primary action"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>HTTP tab — live list with failure rails</sub></td>
+    <td align="center"><sub>Event detail — timing, headers, JSON</sub></td>
+    <td align="center"><sub>Share sheet — "Copy for AI agent" first</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/mqtt-dark.png" width="260" alt="MQTT tab — publish, receive and subscribe rows with QoS badges and failure rails"/></td>
+    <td align="center"><img src="docs/screenshots/ble-dark.png" width="260" alt="Bluetooth tab — GATT connect, discover, read, notify and error operations"/></td>
+    <td align="center"><img src="docs/screenshots/home-light.png" width="260" alt="Sharingan home — HTTP tab in light mode"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>MQTT tab — pub/recv/sub with QoS</sub></td>
+    <td align="center"><sub>Bluetooth tab — GATT operations</sub></td>
+    <td align="center"><sub>Light mode follows the system theme</sub></td>
+  </tr>
+</table>
+
+## Features
+
 - **Three protocol tabs** — HTTP, MQTT, Bluetooth (BLE/GATT), each with live counts, search and quick filters, in a compact terminal-density list.
 - **Detail view per event** — timing waterfall, request/response headers (secrets redacted at capture), syntax-colored JSON bodies, QoS/retain flags, GATT operations and decoded values.
 - **Share sheet built for agents** — "Copy for AI agent" produces structured Markdown an LLM parses reliably; cURL, raw JSON and the system share sheet are one tap away.
 - **Zero release impact** — swap in the `sharingan-noop` artifact: identical API, captures nothing, ships no UI.
+- **Memory-only** — an in-memory ring buffer (default 300 events); nothing is ever written to disk.
 - **Minimal** — no image assets, no icon fonts, no bundled typefaces, no DI, no navigation library. The capture core depends only on coroutines (+ Ktor when you use the plugin).
 
----
+Requirements: Android API 24+, iOS arm64 + simulator arm64, Ktor 3.x for the HTTP plugin.
 
 ## Setup
 
@@ -25,7 +51,9 @@ dependencies {
 }
 ```
 
-### Kotlin Multiplatform app
+That's the whole integration story for build types: debug builds get capture + UI, release builds get the inert no-op (see [what "no effect" means](#release-builds-what-no-effect-means)). On Android there is **zero init code** — Sharingan starts via a manifest-merged ContentProvider; no `Application` changes.
+
+### Kotlin Multiplatform app (shared module + iOS)
 
 Gradle resolves one dependency list for `commonMain`, so pick the artifact with a property:
 
@@ -46,7 +74,7 @@ kotlin {
 
 Build release artifacts with `-Prelease`. (Kotlin/Native dead-code elimination also strips whatever the no-op artifact doesn't reference.)
 
-## Capture
+## Quick start
 
 ### HTTP — automatic (Ktor)
 
@@ -56,7 +84,7 @@ val client = HttpClient {
 }
 ```
 
-The plugin records method, URL, status, headers, textual bodies (capped at 64 KB, configurable), duration and a TTFB/Download timing split. `Authorization`, `Cookie`, `Set-Cookie` and `Proxy-Authorization` values are masked **at capture time** — secrets never reach the buffer. Streaming responses (`text/event-stream`, binary) are never consumed.
+The plugin records method, URL, status, headers, textual bodies (capped at 64 KB, configurable), duration and a TTFB/Download timing split. `Authorization`, `Cookie`, `Set-Cookie` and `Proxy-Authorization` values are masked **at capture time** — secrets never reach the buffer. Streaming responses (`text/event-stream`, binary) are never consumed. Transport failures are recorded, then rethrown untouched.
 
 ```kotlin
 install(SharinganKtor) {
@@ -85,6 +113,8 @@ Sharingan.ble.read(device, characteristic, uuid, value)
 Sharingan.ble.error(device, message = "Attribute not found (GATT 0x0A)", characteristic, uuid)
 ```
 
+Payloads that parse as JSON get pretty-printing and syntax colors in the UI and in agent exports — log decoded JSON text whenever you can.
+
 <details>
 <summary>Kable adapter recipe</summary>
 
@@ -100,6 +130,8 @@ peripheral.observe(characteristic).onEach { bytes ->
 ```
 </details>
 
+More adapters (KMQTT/HiveMQ/Paho callbacks, full Kable wiring, shake-to-open) live in [docs/RECIPES.md](docs/RECIPES.md).
+
 ## Opening the log browser
 
 | Platform | Entry point |
@@ -107,29 +139,46 @@ peripheral.observe(characteristic).onEach { bytes ->
 | Android | Tap the **capture notification** (appears on first event), or `Sharingan.show(context)` |
 | iOS | Present `SharinganViewController()` from Swift (sheet, push, debug menu, shake) |
 
-```swift
-// SwiftUI
-.sheet(isPresented: $showLogs) {
-    SharinganView() // UIViewControllerRepresentable wrapping SharinganViewController()
-}
-```
+### Android
+
+The capture notification shows per-protocol counters, a three-event ticker when expanded, and a Pause/Resume action. It is silent and updated in place. Two things to know:
+
+- **Android 13+:** the notification needs the `POST_NOTIFICATIONS` runtime permission — Sharingan declares it, your app requests it. Without the grant, capture still works; open the browser with `Sharingan.show(context)`.
+- **Do Not Disturb:** because the notification is silent, DND hides it on most devices — `Sharingan.show(context)` always works (wire it to a debug-drawer button or shake gesture).
+
+### iOS
 
 iOS has no sticky-notification equivalent; the view controller is the platform-conventional entry. Everything else — capture API, screens, share sheet — behaves identically on both platforms.
 
-The Android notification shows per-protocol counters, a three-event ticker when expanded, and a Pause/Resume action. It is silent and updated in place. On Android 13+ request `POST_NOTIFICATIONS` (Sharingan declares the permission, your app requests it); without it, capture still works — open the browser with `Sharingan.show(context)`. Note: because the notification is silent, **Do Not Disturb hides it** on most devices — `Sharingan.show(context)` always works.
+```swift
+import SwiftUI
+import Sharingan // your shared framework
+
+struct SharinganView: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        SharinganViewControllerKt.SharinganViewController()
+    }
+    func updateUIViewController(_ vc: UIViewController, context: Context) {}
+}
+
+// usage
+.sheet(isPresented: $showLogs) { SharinganView() }
+```
 
 ## Sharing & exporting
 
-Every formatter behind the share sheet is public API, so scripts and agents can produce identical output:
+The share sheet's primary action is **Copy for AI agent**: structured Markdown with method/path/status/host, request headers and the response body fenced as ` ```json ` — paste it straight into Claude or any chat. Every formatter behind the sheet is public API, so scripts and agents can produce identical output:
 
 ```kotlin
 SharinganExport.agentMarkdown(event)      // one event as structured Markdown
 SharinganExport.agentMarkdown(events)     // whole session, with counts header
-SharinganExport.curl(httpEvent)           // reproducible curl command
+SharinganExport.curl(httpEvent)           // reproducible curl command (redactions stay masked)
 SharinganExport.json(event)               // machine-readable single event
 SharinganExport.sessionJson(events)       // full session with tool metadata
 SharinganExport.summary(events)           // human digest, one line per event
 ```
+
+Debugging with a user? Ask them: open Sharingan → (optionally open the failing event) → Share → **Copy for AI agent** → paste.
 
 ## Control surface
 
@@ -141,7 +190,7 @@ Sharingan.clear()                // drop everything
 Sharingan.setNotificationEnabled(false)  // Android: opt out of the notification
 ```
 
-The buffer is an in-memory ring (default 300 events) — nothing is ever written to disk.
+The buffer is an in-memory ring (default 300 events, `SharinganStore(capacity)` for custom sizes) — nothing is ever written to disk, and process death clears it. Loggers are thread-safe and callable from any thread.
 
 ## Release builds: what "no effect" means
 
@@ -152,16 +201,20 @@ The buffer is an in-memory ring (default 300 events) — nothing is ever written
 
 ## Sample app
 
-`sample/composeApp` generates the design's IoT scenario offline (MockEngine): device state calls, a 401 token refresh, a 500 stream timeout, MQTT telemetry with a broker failure, and a BLE heart-rate session.
+`sample/composeApp` generates the design's IoT scenario offline (MockEngine): device state calls, a 401 token refresh, a 500 stream timeout, MQTT telemetry with a broker failure, and a BLE heart-rate session. All screenshots above come from it.
 
 ```bash
 ./gradlew :sample:composeApp:installDebug          # Android
 ./gradlew :sample:composeApp:assembleRelease -Psharingan.noop  # parity proof
 ```
 
-## For AI agents
+## Documentation
 
-Integrating Sharingan with an agent or asking one to debug with it? Point it at [AGENTS.md](AGENTS.md) (also mirrored at `llms.txt`) — a terse, complete API reference designed for machine consumption.
+| Doc | What's in it |
+|---|---|
+| [AGENTS.md](AGENTS.md) (mirrored at [llms.txt](llms.txt)) | Terse, complete API reference designed for machine consumption — point your AI agent here |
+| [docs/RECIPES.md](docs/RECIPES.md) | Integration recipes: MQTT clients, Kable, SwiftUI wrapper, Live Activity analog, shake-to-open |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the library is built: module layout, capture pipeline, UI structure |
 
 ## License
 
