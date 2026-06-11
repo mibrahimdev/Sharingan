@@ -86,9 +86,10 @@ internal object CaptureNotification {
         )
 
         @Suppress("DEPRECATION")
-        val builder =
+        val base =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(context, CHANNEL_ID)
             else Notification.Builder(context)
+        val builder = base
             .setSmallIcon(R.drawable.sharingan_ic_notification)
             .setContentTitle("Sharingan — $stateLabel · ${events.size} events")
             .setContentText("HTTP $http · MQTT $mqtt · BLE $ble")
@@ -106,8 +107,9 @@ internal object CaptureNotification {
 
         try {
             manager.notify(NOTIFICATION_ID, builder.build())
-        } catch (_: SecurityException) {
-            // POST_NOTIFICATIONS not granted; capture continues silently.
+        } catch (_: Exception) {
+            // Missing POST_NOTIFICATIONS or any notification failure must never
+            // crash the host app; capture continues silently.
         }
     }
 

@@ -47,7 +47,7 @@ internal class SharinganExportTest {
     // ── agent markdown: single event ─────────────────────────────
 
     @Test
-    fun `When an HTTP event is exported as agent markdown, Then it has heading status host headers and body fence`() {
+    fun `When an HTTP event is exported as agent markdown Then it has heading status host headers and body fence`() {
         val md = SharinganExport.agentMarkdown(httpEvent)
         assertContains(md, "## GET /api/v2/devices/4471/state")
         assertContains(md, "**Status:** 200")
@@ -59,7 +59,7 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `When an MQTT event is exported as agent markdown, Then it has direction topic qos and payload`() {
+    fun `When an MQTT event is exported as agent markdown Then it has direction topic qos and payload`() {
         val md = SharinganExport.agentMarkdown(mqttEvent)
         assertContains(md, "## MQTT PUB devices/4471/telemetry")
         assertContains(md, "**QoS:** 1")
@@ -68,7 +68,7 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `When a BLE event is exported as agent markdown, Then it has operation characteristic device and uuid`() {
+    fun `When a BLE event is exported as agent markdown Then it has operation characteristic device and uuid`() {
         val md = SharinganExport.agentMarkdown(bleEvent)
         assertContains(md, "## BLE NOTIFY Heart Rate Measurement")
         assertContains(md, "**Device:** HR-Monitor-9F")
@@ -77,7 +77,7 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `Given a failed HTTP event, When exported as agent markdown, Then the error is stated`() {
+    fun `Given a failed HTTP event When exported as agent markdown Then the error is stated`() {
         val md = SharinganExport.agentMarkdown(httpEvent.copy(statusCode = null, error = "connect timeout"))
         assertContains(md, "**Error:** connect timeout")
     }
@@ -85,7 +85,7 @@ internal class SharinganExportTest {
     // ── agent markdown: session ──────────────────────────────────
 
     @Test
-    fun `When a session is exported as agent markdown, Then it has a header with counts and one section per event`() {
+    fun `When a session is exported as agent markdown Then it has a header with counts and one section per event`() {
         val md = SharinganExport.agentMarkdown(listOf(httpEvent, mqttEvent, bleEvent))
         assertContains(md, "# Sharingan session export")
         assertContains(md, "3 events")
@@ -98,7 +98,7 @@ internal class SharinganExportTest {
     // ── cURL ─────────────────────────────────────────────────────
 
     @Test
-    fun `When an HTTP event is exported as cURL, Then method url and headers are present`() {
+    fun `When an HTTP event is exported as cURL Then method url and headers are present`() {
         val curl = SharinganExport.curl(httpEvent)
         assertContains(curl, "curl -X GET")
         assertContains(curl, "'https://api.acme-iot.com/api/v2/devices/4471/state'")
@@ -107,7 +107,7 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `Given a request body, When exported as cURL, Then a data flag carries the body`() {
+    fun `Given a request body When exported as cURL Then a data flag carries the body`() {
         val curl = SharinganExport.curl(
             httpEvent.copy(method = "POST", requestBody = """{"cmd":"reboot"}""")
         )
@@ -116,7 +116,7 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `Given a body with single quotes, When exported as cURL, Then the quotes are shell-escaped`() {
+    fun `Given a body with single quotes When exported as cURL Then the quotes are shell-escaped`() {
         val curl = SharinganExport.curl(httpEvent.copy(method = "POST", requestBody = "it's"))
         assertContains(curl, """--data 'it'\''s'""")
     }
@@ -124,7 +124,7 @@ internal class SharinganExportTest {
     // ── JSON ─────────────────────────────────────────────────────
 
     @Test
-    fun `When an HTTP event is exported as JSON, Then protocol fields are present and strings are escaped`() {
+    fun `When an HTTP event is exported as JSON Then protocol fields are present and strings are escaped`() {
         val json = SharinganExport.json(httpEvent.copy(responseBody = "line1\n\"quoted\""))
         assertContains(json, "\"protocol\": \"http\"")
         assertContains(json, "\"method\": \"GET\"")
@@ -133,7 +133,7 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `When a session is exported as JSON, Then it wraps all events with tool metadata`() {
+    fun `When a session is exported as JSON Then it wraps all events with tool metadata`() {
         val json = SharinganExport.sessionJson(listOf(httpEvent, mqttEvent, bleEvent))
         assertContains(json, "\"tool\": \"sharingan\"")
         assertContains(json, "\"events\": [")
@@ -144,7 +144,7 @@ internal class SharinganExportTest {
     // ── byte formatting ──────────────────────────────────────────
 
     @Test
-    fun `When byte counts are formatted, Then they render like the design rows`() {
+    fun `When byte counts are formatted Then they render like the design rows`() {
         assertEquals("0 B", formatBytes(0))
         assertEquals("312 B", formatBytes(312))
         assertEquals("4.2 KB", formatBytes(4300))
@@ -152,12 +152,12 @@ internal class SharinganExportTest {
     }
 
     @Test
-    fun `Given no byte count, When formatted, Then a dash placeholder is returned`() {
+    fun `Given no byte count When formatted Then a dash placeholder is returned`() {
         assertEquals("—", formatBytes(null))
     }
 
     @Test
-    fun `When a session summary is exported, Then it lists one line per event with outcome`() {
+    fun `When a session summary is exported Then it lists one line per event with outcome`() {
         val text = SharinganExport.summary(listOf(httpEvent, mqttEvent, bleEvent))
         assertTrue(text.lines().any { it.contains("GET /api/v2/devices/4471/state") && it.contains("200") })
         assertTrue(text.lines().any { it.contains("PUB devices/4471/telemetry") })

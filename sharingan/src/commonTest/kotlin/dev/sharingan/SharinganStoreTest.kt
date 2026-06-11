@@ -19,7 +19,7 @@ internal class SharinganStoreTest {
     )
 
     @Test
-    fun `When an event is recorded, Then it appears in the events flow in insertion order`() {
+    fun `When an event is recorded Then it appears in the events flow in insertion order`() {
         val store = SharinganStore(capacity = 10)
         store.record(event("a"))
         store.record(event("b"))
@@ -27,14 +27,14 @@ internal class SharinganStoreTest {
     }
 
     @Test
-    fun `Given a full buffer, When another event is recorded, Then the oldest event is evicted`() {
+    fun `Given a full buffer When another event is recorded Then the oldest event is evicted`() {
         val store = SharinganStore(capacity = 3)
         listOf("a", "b", "c", "d").forEach { store.record(event(it)) }
         assertEquals(listOf("b", "c", "d"), store.events.value.map { it.id })
     }
 
     @Test
-    fun `Given recording is paused, When an event is recorded, Then it is dropped`() {
+    fun `Given recording is paused When an event is recorded Then it is dropped`() {
         val store = SharinganStore(capacity = 10)
         store.setRecording(false)
         store.record(event("a"))
@@ -43,7 +43,7 @@ internal class SharinganStoreTest {
     }
 
     @Test
-    fun `Given recording was paused, When recording resumes, Then new events are captured again`() {
+    fun `Given recording was paused When recording resumes Then new events are captured again`() {
         val store = SharinganStore(capacity = 10)
         store.setRecording(false)
         store.record(event("dropped"))
@@ -53,7 +53,7 @@ internal class SharinganStoreTest {
     }
 
     @Test
-    fun `When the store is cleared, Then the events flow becomes empty`() {
+    fun `When the store is cleared Then the events flow becomes empty`() {
         val store = SharinganStore(capacity = 10)
         store.record(event("a"))
         store.clear()
@@ -61,7 +61,7 @@ internal class SharinganStoreTest {
     }
 
     @Test
-    fun `When events of each protocol are recorded, Then counts reflect each protocol`() {
+    fun `When events of each protocol are recorded Then counts reflect each protocol`() {
         val store = SharinganStore(capacity = 10)
         store.record(event("m1"))
         store.record(

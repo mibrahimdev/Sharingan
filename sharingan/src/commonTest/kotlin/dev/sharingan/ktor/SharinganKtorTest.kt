@@ -48,7 +48,7 @@ internal class SharinganKtorTest {
         }
 
     @Test
-    fun `When a request succeeds, Then an HttpEvent with method url status headers and body is recorded`() = runTest {
+    fun `When a request succeeds Then an HttpEvent with method url status headers and body is recorded`() = runTest {
         val store = SharinganStore(capacity = 10)
         client(store).use { http ->
             http.get("https://api.acme-iot.com/api/v2/devices/4471/state") {
@@ -68,7 +68,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `When a request carries a body, Then the request body is captured`() = runTest {
+    fun `When a request carries a body Then the request body is captured`() = runTest {
         val store = SharinganStore(capacity = 10)
         client(store).use { http ->
             http.post("https://api.acme-iot.com/api/v2/devices/4471/commands") {
@@ -81,7 +81,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `Given a redacted header, When a request is captured, Then its value is masked`() = runTest {
+    fun `Given a redacted header When a request is captured Then its value is masked`() = runTest {
         val store = SharinganStore(capacity = 10)
         client(store).use { http ->
             http.get("https://api.acme-iot.com/state") {
@@ -93,7 +93,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `When a request fails at transport level, Then a failure event is recorded and the exception propagates`() = runTest {
+    fun `When a request fails at transport level Then a failure event is recorded and the exception propagates`() = runTest {
         val store = SharinganStore(capacity = 10)
         client(store).use { http ->
             assertFailsWith<RuntimeException> { http.get("https://api.acme-iot.com/fail") }
@@ -106,7 +106,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `Given a response larger than the cap, When captured, Then the body is truncated with a marker`() = runTest {
+    fun `Given a response larger than the cap When captured Then the body is truncated with a marker`() = runTest {
         val store = SharinganStore(capacity = 10)
         client(store) { maxBodyBytes = 1024 }.use { http ->
             http.get("https://api.acme-iot.com/big")
@@ -118,7 +118,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `Given body capture is disabled, When a request succeeds, Then bodies are omitted`() = runTest {
+    fun `Given body capture is disabled When a request succeeds Then bodies are omitted`() = runTest {
         val store = SharinganStore(capacity = 10)
         client(store) { captureBodies = false }.use { http ->
             http.get("https://api.acme-iot.com/state")
@@ -128,7 +128,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `When the plugin captures a response, Then the caller can still read the body downstream`() = runTest {
+    fun `When the plugin captures a response Then the caller can still read the body downstream`() = runTest {
         val store = SharinganStore(capacity = 10)
         val body = client(store).use { http ->
             http.get("https://api.acme-iot.com/state").bodyAsText()
@@ -137,7 +137,7 @@ internal class SharinganKtorTest {
     }
 
     @Test
-    fun `Given recording is paused, When a request succeeds, Then nothing is recorded`() = runTest {
+    fun `Given recording is paused When a request succeeds Then nothing is recorded`() = runTest {
         val store = SharinganStore(capacity = 10)
         store.setRecording(false)
         client(store).use { http ->

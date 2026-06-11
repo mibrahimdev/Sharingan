@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 internal class LoggersTest {
 
     @Test
-    fun `When an MQTT publish is logged, Then a PUBLISH event with topic qos and payload is stored`() {
+    fun `When an MQTT publish is logged Then a PUBLISH event with topic qos and payload is stored`() {
         val store = SharinganStore(capacity = 10)
         val mqtt = MqttLogger(store)
         mqtt.publish(topic = "devices/4471/telemetry", payload = """{"temp":23.4}""", qos = 1, retained = false)
@@ -22,7 +22,7 @@ internal class LoggersTest {
     }
 
     @Test
-    fun `When an MQTT receive and subscribe are logged, Then their directions are RECEIVE and SUBSCRIBE`() {
+    fun `When an MQTT receive and subscribe are logged Then their directions are RECEIVE and SUBSCRIBE`() {
         val store = SharinganStore(capacity = 10)
         val mqtt = MqttLogger(store)
         mqtt.received(topic = "devices/4471/commands/reboot", payload = "{}", qos = 1)
@@ -32,7 +32,7 @@ internal class LoggersTest {
     }
 
     @Test
-    fun `When a BLE notify is logged, Then a NOTIFY event with device characteristic and uuid is stored`() {
+    fun `When a BLE notify is logged Then a NOTIFY event with device characteristic and uuid is stored`() {
         val store = SharinganStore(capacity = 10)
         val ble = BleLogger(store)
         ble.notify(
@@ -49,7 +49,7 @@ internal class LoggersTest {
     }
 
     @Test
-    fun `When a BLE error is logged, Then the event is a failure with an ERROR operation`() {
+    fun `When a BLE error is logged Then the event is a failure with an ERROR operation`() {
         val store = SharinganStore(capacity = 10)
         val ble = BleLogger(store)
         ble.error(device = "HR-Monitor-9F", characteristic = "Body Sensor Location", uuid = "0x2A38", message = "Attribute not found")
@@ -60,7 +60,7 @@ internal class LoggersTest {
     }
 
     @Test
-    fun `When an HTTP call is logged manually, Then redacted headers are masked`() {
+    fun `When an HTTP call is logged manually Then redacted headers are masked`() {
         val store = SharinganStore(capacity = 10)
         val http = HttpLogger(store, redactedHeaders = setOf("Authorization"))
         http.log(
@@ -76,7 +76,7 @@ internal class LoggersTest {
     }
 
     @Test
-    fun `When two events are logged, Then their generated ids differ`() {
+    fun `When two events are logged Then their generated ids differ`() {
         val store = SharinganStore(capacity = 10)
         val mqtt = MqttLogger(store)
         mqtt.publish(topic = "a", payload = null)

@@ -7,7 +7,7 @@ import kotlin.test.assertNull
 internal class JsonPrettyTest {
 
     @Test
-    fun `When minified JSON is prettified, Then it is re-indented with two spaces`() {
+    fun `When minified JSON is prettified Then it is re-indented with two spaces`() {
         val pretty = prettyJson("""{"deviceId":4471,"online":true,"sensors":{"temp":23.4}}""")
         assertEquals(
             """
@@ -24,7 +24,7 @@ internal class JsonPrettyTest {
     }
 
     @Test
-    fun `When an array is prettified, Then elements are indented one level`() {
+    fun `When an array is prettified Then elements are indented one level`() {
         val pretty = prettyJson("""{"items":[1,2]}""")
         assertEquals(
             """
@@ -40,7 +40,7 @@ internal class JsonPrettyTest {
     }
 
     @Test
-    fun `Given empty containers, When prettified, Then they stay inline`() {
+    fun `Given empty containers When prettified Then they stay inline`() {
         assertEquals("{}", prettyJson("{}"))
         assertEquals(
             """
@@ -53,7 +53,7 @@ internal class JsonPrettyTest {
     }
 
     @Test
-    fun `Given escaped characters in strings, When prettified, Then escapes are preserved`() {
+    fun `Given escaped characters in strings When prettified Then escapes are preserved`() {
         assertEquals(
             """
             {
@@ -65,7 +65,7 @@ internal class JsonPrettyTest {
     }
 
     @Test
-    fun `Given null and negative numbers, When prettified, Then literals render verbatim`() {
+    fun `Given null and negative numbers When prettified Then literals render verbatim`() {
         assertEquals(
             """
             {
@@ -78,14 +78,14 @@ internal class JsonPrettyTest {
     }
 
     @Test
-    fun `Given invalid JSON, When prettified, Then null is returned so callers fall back to plain text`() {
+    fun `Given invalid JSON When prettified Then null is returned so callers fall back to plain text`() {
         assertNull(prettyJson("not json"))
         assertNull(prettyJson("""{"a":}"""))
         assertNull(prettyJson("""{"a":1"""))
     }
 
     @Test
-    fun `Given trailing garbage, When prettified, Then null is returned`() {
+    fun `Given trailing garbage When prettified Then null is returned`() {
         assertNull(prettyJson("""{} extra"""))
     }
 }

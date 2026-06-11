@@ -116,7 +116,7 @@ peripheral.observe(characteristic).onEach { bytes ->
 
 iOS has no sticky-notification equivalent; the view controller is the platform-conventional entry. Everything else — capture API, screens, share sheet — behaves identically on both platforms.
 
-The Android notification shows per-protocol counters, a three-event ticker when expanded, and a Pause/Resume action. It is silent and updated in place. On Android 13+ request `POST_NOTIFICATIONS` (Sharingan declares the permission, your app requests it); without it, capture still works — open the browser with `Sharingan.show(context)`.
+The Android notification shows per-protocol counters, a three-event ticker when expanded, and a Pause/Resume action. It is silent and updated in place. On Android 13+ request `POST_NOTIFICATIONS` (Sharingan declares the permission, your app requests it); without it, capture still works — open the browser with `Sharingan.show(context)`. Note: because the notification is silent, **Do Not Disturb hides it** on most devices — `Sharingan.show(context)` always works.
 
 ## Sharing & exporting
 
