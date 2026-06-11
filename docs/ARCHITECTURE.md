@@ -55,6 +55,7 @@ Key files, in flow order:
 | Ring buffer | [sharingan/src/commonMain/kotlin/dev/sharingan/SharinganStore.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/SharinganStore.kt) |
 | Log browser entry | [sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganScreen.kt) |
 | Exporters | [sharingan/src/commonMain/kotlin/dev/sharingan/SharinganExport.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/SharinganExport.kt) |
+| Protocol descriptors (per-protocol UI/export/ticker knowledge) | [sharingan/src/commonMain/kotlin/dev/sharingan/ui/ProtocolDescriptor.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/ProtocolDescriptor.kt) + `HttpDescriptor.kt` / `MqttDescriptor.kt` / `BleDescriptor.kt` |
 | Android notification | [sharingan/src/androidMain/kotlin/dev/sharingan/internal/CaptureNotification.kt](../sharingan/src/androidMain/kotlin/dev/sharingan/internal/CaptureNotification.kt) |
 | iOS entry point | [sharingan/src/iosMain/kotlin/dev/sharingan/SharinganViewController.kt](../sharingan/src/iosMain/kotlin/dev/sharingan/SharinganViewController.kt) |
 
@@ -109,7 +110,7 @@ All deliberate, all verifiable:
 ### 2.5 UI architecture
 
 - **Stateless `*Content` + thin state wrapper.** `SharinganScreen` (public) collects flows, owns selection/search/chip/share state, and forwards a `HomeUiState` + lambdas into `SharinganScreenContent` (internal, pure parameters). Same split inside: `HomeScreenContent` ([ui/HomeScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/HomeScreen.kt)), `DetailScreenContent` ([ui/DetailScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/DetailScreen.kt)), `ShareSheetBody` ([ui/ShareSheet.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/ShareSheet.kt)).
-- **Design tokens lifted verbatim from the design handoff.** `SharinganColors` light/dark palettes in [ui/SharinganTheme.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganTheme.kt), exposed via `LocalSharinganColors`; a minimal Material3 scheme is derived only for sheets/ripples. Per-event presentation (method/status/direction/operation tints, rail color, row strings) is resolved once in [ui/EventPresentation.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/EventPresentation.kt).
+- **Design tokens lifted verbatim from the design handoff.** `SharinganColors` light/dark palettes in [ui/SharinganTheme.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganTheme.kt), exposed via `LocalSharinganColors`; a minimal Material3 scheme is derived only for sheets/ripples. Per-event presentation (method/status/direction/operation tints, rail color, row strings) is resolved once per event via `presentationOf()` in [ui/EventPresentation.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/EventPresentation.kt), which delegates to the event's ProtocolDescriptor (§5.1).
 - **Scaffold + safeDrawing insets.** `SharinganScreenContent` roots in `Scaffold(contentWindowInsets = WindowInsets.safeDrawing)`, child applies `padding(innerPadding)` then `consumeWindowInsets(innerPadding)`; `SharinganActivity` calls `enableEdgeToEdge()`.
 - **Previews only on stateless composables**, `private`, named `<Composable>_<Variant>Preview`, fake state from [ui/PreviewData.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/PreviewData.kt) (hardcoded IoT events mirroring the design). The VM-wrapper-equivalent (`SharinganScreen`) has no preview.
 - Reference screenshots of the shipped UI live in [docs/screenshots/](screenshots/).
@@ -147,6 +148,8 @@ The store, models, exporters, plugin, filters and JSON printer were all TDD'd (c
 | Exporters | [SharinganExportTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/SharinganExportTest.kt) | Markdown shape, cURL shell-escaping, JSON escaping, session wrappers, byte formatting |
 | Ktor plugin | [ktor/SharinganKtorTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ktor/SharinganKtorTest.kt) | via **MockEngine**: capture, redaction, truncation marker, failure propagation, downstream body still readable, paused = nothing recorded |
 | Filter logic | [ui/EventFilterTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ui/EventFilterTest.kt) | chip semantics per protocol, case-insensitive search haystacks |
+| Share routing | [ui/ShareResolverTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ui/ShareResolverTest.kt) | action × scope × event-type → payload/delivery/toast decision table |
+| Notification wording | [internal/NotificationContentTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/internal/NotificationContentTest.kt) | title/counters/ticker/action text, nothing-to-post case |
 | JSON pretty-printer | [ui/JsonPrettyTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ui/JsonPrettyTest.kt) | indentation, escapes, `null` fallback on invalid/trailing-garbage input |
 
 **Run:**
@@ -160,7 +163,11 @@ The store, models, exporters, plugin, filters and JSON printer were all TDD'd (c
 
 - Names follow `` `Given …, When …, Then …` `` BDD phrasing — but **without commas**: Kotlin/Native rejects backticked test names containing commas (and other invalid-identifier chars) when generating native test symbols. Write `Given a full buffer When another event is recorded Then…`, not `Given a full buffer, When…`. Every existing test follows this.
 - Use a fresh `SharinganStore(capacity)` per test, never the `Sharingan` singleton — keeps tests isolated.
-- **Deliberately not unit-tested:** composables. They are covered by `@Preview`s on every stateless `*Content` (visual verification) plus the sample app on emulator/device. No screenshot/E2E infrastructure exists yet; per project convention E2E lands only once a flow is settled.
+- **Composables are not unit-tested** — they are covered by `@Preview`s on every stateless `*Content` (visual verification) plus the on-device instrumented suites below, which landed once the flows settled (per project convention).
+- **On-device UI tests** (needs a connected device or emulator):
+  - `./gradlew :sharingan:connectedDebugAndroidTest` — [SharinganScreenUiTest](../sharingan/src/androidInstrumentedTest/kotlin/dev/sharingan/ui/SharinganScreenUiTest.kt): the full browser flow (tab counts, descriptor chips, search, detail sections, share sheet, copy-for-agent toast, REC pause) via the Compose Multiplatform test API (`runComposeUiTest`), each test against its own seeded `SharinganStore`. The test APK registers `ComponentActivity` in [androidInstrumentedTest/AndroidManifest.xml](../sharingan/src/androidInstrumentedTest/AndroidManifest.xml) instead of pulling androidx's `ui-test-manifest` (avoids pinning a second androidx-compose version next to CMP's).
+  - `./gradlew :sample:composeApp:connectedDebugAndroidTest` — [CaptureNotificationE2eTest](../sample/composeApp/src/androidInstrumentedTest/kotlin/dev/sharingan/sample/CaptureNotificationE2eTest.kt): zero-setup init → capture notification with per-protocol counters → Paused/Capturing toggle, asserted via the app's own `activeNotifications` (immune to DND, no shade automation).
+  - Instrumented test names use plain `flow_expectation` style — backticked names with spaces are unreliable after dexing on older APIs.
 
 ---
 
@@ -190,26 +197,22 @@ Quirks and facts a maintainer needs:
 
 ### 5.1 Add a new protocol tab (e.g. WebSocket, gRPC)
 
-Follow the chain the three existing protocols use; grep for any `when (event)` over `SharinganEvent` — the sealed interface makes the compiler list every site:
+Per-protocol knowledge lives in one place: a **ProtocolDescriptor** ([ui/ProtocolDescriptor.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/ProtocolDescriptor.kt)) — chips, chip matching, search haystack, row presentation, the notification ticker line, the per-event export fragments and the `@Composable` detail body. `descriptorOf(event)` is the single exhaustive `when (event)` in the codebase, so adding a sealed subtype produces a compile error at exactly one registration site, and the descriptor base class then forces every concern (including the detail body) to be implemented:
 
 1. **Event model**: new `data class XxxEvent(...) : SharinganEvent` next to [HttpEvent.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/HttpEvent.kt); override `isFailure` if failure isn't just `error != null`.
 2. **Logger**: `XxxLogger(store)` modeled on [MqttLogger.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/MqttLogger.kt); expose on the [Sharingan.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/Sharingan.kt) facade. Use `EventIds.next("xxx-")`.
-3. **Protocol enum + mapping**: add to `Protocol` and `protocolOf()` in [ui/EventFilter.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/EventFilter.kt).
-4. **Chips + search**: `chipsFor()`, `matchesChip()`, `haystack()` in the same file (TDD against [ui/EventFilterTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ui/EventFilterTest.kt)).
-5. **Presentation**: a branch in `presentationOf()` + a tint function in [ui/EventPresentation.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/EventPresentation.kt); noun in `eventNoun()`; tab icon in [ui/SharinganIcons.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganIcons.kt) and the icon `when` in `TabBar` ([ui/HomeScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/HomeScreen.kt)); search placeholder in `SearchField`.
-6. **Detail body**: `XxxDetailBody` branch in `DetailScreenContent` ([ui/DetailScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/DetailScreen.kt)), reusing `Section`/`KeyValueRow`/`BodyBlock`.
-7. **Exporter cases**: `agentMarkdown`, `eventJson`, `summaryLine`, `countsLine` in [SharinganExport.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/SharinganExport.kt) (TDD against `SharinganExportTest.kt`).
-8. **Notification ticker**: `tickerLine()` + counters in [CaptureNotification.kt](../sharingan/src/androidMain/kotlin/dev/sharingan/internal/CaptureNotification.kt).
-9. **Noop mirror**: copy the event model verbatim + inert logger into [sharingan-noop/src/commonMain/kotlin/](../sharingan-noop/src/commonMain/kotlin/); run the parity build.
-10. Preview data in [ui/PreviewData.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/PreviewData.kt) and demo traffic in [sample .../DemoTraffic.kt](../sample/composeApp/src/commonMain/kotlin/dev/sharingan/sample/DemoTraffic.kt).
+3. **Descriptor**: `internal object XxxDescriptor : ProtocolDescriptor<XxxEvent>()` modeled on [ui/MqttDescriptor.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/MqttDescriptor.kt); add the tab to the `Protocol` enum ([ui/EventFilter.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/EventFilter.kt)) and register the descriptor in both `descriptorOf()` overloads. TDD chips/search against [ui/EventFilterTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ui/EventFilterTest.kt), exports against `SharinganExportTest.kt` — both suites test through the stable shells (`matchesChip`, `SharinganExport.agentMarkdown`, …), which delegate to descriptors.
+4. **Residual UI chrome**: tab icon in [ui/SharinganIcons.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganIcons.kt) and the icon `when` in `TabBar` ([ui/HomeScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/HomeScreen.kt)); search placeholder in `SearchField`; session `countsLine` in [SharinganExport.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/SharinganExport.kt) (session assembly deliberately stays outside descriptors).
+5. **Noop mirror**: copy the event model verbatim + inert logger into [sharingan-noop/src/commonMain/kotlin/](../sharingan-noop/src/commonMain/kotlin/); run the parity build. (Descriptors are `internal` — the noop never mirrors them.)
+6. Preview data in [ui/PreviewData.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/PreviewData.kt) and demo traffic in [sample .../DemoTraffic.kt](../sample/composeApp/src/commonMain/kotlin/dev/sharingan/sample/DemoTraffic.kt).
 
 For **WebSocket capture** specifically: Ktor's `WebSockets` plugin offers no equivalent of `on(Send)` interception per frame, so either wrap `DefaultClientWebSocketSession` or document manual logging (`Sharingan.ws.sent/received`) like MQTT. For **gRPC**: there is no standard KMP gRPC client; manual logger is the consistent choice (see §6, last bullet).
 
 ### 5.2 Add a share format
 
-1. Formatter in [SharinganExport.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/SharinganExport.kt) (public — the export API is a feature; tests first).
+1. Formatter in [SharinganExport.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/SharinganExport.kt) (public — the export API is a feature; tests first). Per-event fragments go on the descriptors; session assembly stays in `SharinganExport`.
 2. New `ShareAction` enum case + sheet row in [ui/ShareSheet.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/ShareSheet.kt).
-3. Wire the payload + toast in `sharePayload()` / `onShareAction` in [ui/SharinganScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/SharinganScreen.kt).
+3. Payload + delivery + toast are one branch in `resolveShare()` ([ui/ShareResolver.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/ShareResolver.kt)), TDD against [ui/ShareResolverTest.kt](../sharingan/src/commonTest/kotlin/dev/sharingan/ui/ShareResolverTest.kt) — `SharinganScreen` needs no changes.
 4. Mirror the formatter signature (returning `""`) in the noop `SharinganExport`.
 
 ### 5.3 Add row-style variants

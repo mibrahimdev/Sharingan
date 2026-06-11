@@ -8,6 +8,10 @@ ktor = "3.5.0"
 kotlinx-coroutines = "1.11.0"
 
 androidx-activityCompose = "1.11.0"
+androidx-testRunner = "1.7.0"
+androidx-testRules = "1.7.0"
+androidx-testExtJunit = "1.3.0"
+junit = "4.13.2"
 
 android-compileSdk = "36"
 android-minSdk = "24"
@@ -20,6 +24,10 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-testRunner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-testRules" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-testExtJunit" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
