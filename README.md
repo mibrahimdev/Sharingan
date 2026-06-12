@@ -55,7 +55,7 @@ and add `mavenLocal()` to your repositories (`settings.gradle.kts` →
 `dependencyResolutionManagement { repositories { mavenLocal(); ... } }`).
 
 **Tested versions:** Sharingan 0.1.0 → Kotlin **2.4.0**, Ktor **3.5.0**,
-Compose Multiplatform **1.11.1**, AGP 8.13. Later versions may work but are
+Compose Multiplatform **1.11.1**, AGP 8.13.2. Later versions may work but are
 unverified — Kotlin/Native has no cross-compiler-version binary
 compatibility guarantee, so match the Kotlin version exactly.
 

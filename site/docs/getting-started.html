@@ -68,7 +68,7 @@
     (<code>settings.gradle.kts</code> →
     <code>dependencyResolutionManagement { repositories { mavenLocal(); … } }</code>).</p>
     <div class="callout"><b>Tested versions:</b> Sharingan 0.1.0 → Kotlin <b>2.4.0</b>,
-    Ktor <b>3.5.0</b>, Compose Multiplatform <b>1.11.1</b>, AGP 8.13. Later versions may
+    Ktor <b>3.5.0</b>, Compose Multiplatform <b>1.11.1</b>, AGP 8.13.2. Later versions may
     work but are unverified — Kotlin/Native has no cross-compiler-version binary
     compatibility guarantee, so match the Kotlin version exactly.</div>
 
@@ -138,8 +138,10 @@
       <li>Add one of them to the target (General → Frameworks → Embed &amp; Sign), then make
       both the search path <b>and</b> the embed input configuration-dependent: set
       <code>FRAMEWORK_SEARCH_PATHS = $(SRCROOT)/Vendor/Debug</code> for Debug and
-      <code>…/Release</code> for Release. Linking one variant but embedding the other
-      dyld-crashes at launch.</li>
+      <code>…/Release</code> for Release. Reference the framework in the Embed Frameworks phase
+      via <code>$(FRAMEWORK_SEARCH_PATHS)</code>, and after building, verify the embedded
+      framework inside the built <code>.app</code> matches the configuration. Linking one variant but
+      embedding the other dyld-crashes at launch.</li>
       <li><code>import Sharingan</code>, then
       <code>SharinganViewControllerKt.presentSharingan(animated: true)</code>.</li>
     </ol>
@@ -188,6 +190,9 @@
     apps whose Info.plist lacks <code>CADisableMinimumFrameDurationOnPhone</code>; Sharingan
     disables that strict check so the viewer can never take your app down. Adding the key
     yourself is still worthwhile on ProMotion devices — it unlocks 120&nbsp;Hz.</div>
+    <div class="callout"><b>Keep your shared module lean.</b> If you only capture HTTP (no custom
+    debug UI), you do <b>not</b> need any Compose Multiplatform dependencies of your own —
+    Sharingan brings its UI with it.</div>
     <p>A SwiftUI wrapper recipe is in <a href="integrations.html#ios">Integrations</a>.</p>
 
     <h2 id="release">Release safety — what "no effect" means</h2>

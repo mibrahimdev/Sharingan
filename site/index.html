@@ -151,7 +151,7 @@
     releaseImplementation(<span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span>)
 }</code></pre>
   </div>
-  <p class="noop-note">Zero init code on Android — capture starts via a manifest-merged
+  <p class="noop-note">Not yet on Maven Central — see <a href="docs/getting-started.html#install">Getting started → Get the artifacts (publishToMavenLocal)</a>. Zero init code on Android — capture starts via a manifest-merged
   <code>ContentProvider</code>. KMP/iOS setup is <a href="docs/getting-started.html">one Gradle property</a>.</p>
 </section>
 
@@ -178,7 +178,7 @@
   <div class="qs-steps">
     <div class="qs-step"><span class="qs-n">01</span><p>Add the two Gradle lines.<br><code>debugImplementation</code> + noop.</p></div>
     <div class="qs-step"><span class="qs-n">02</span><p><code>install(SharinganKtor)</code> in your HttpClient. MQTT/BLE: one line per callback.</p></div>
-    <div class="qs-step"><span class="qs-n">03</span><p>Use your app. Tap the capture notification — or <code>Sharingan.show(context)</code> / <code>SharinganViewController()</code>.</p></div>
+    <div class="qs-step"><span class="qs-n">03</span><p>Use your app. Tap the capture notification — or present the log browser via <code>Sharingan.show(context)</code> / <code>SharinganViewControllerKt.presentSharingan(animated:)</code>.</p></div>
   </div>
   <div class="hero-cta">
     <a class="btn btn-primary" href="docs/getting-started.html">Read the docs</a>
