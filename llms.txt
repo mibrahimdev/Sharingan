@@ -90,6 +90,11 @@ Sharingan.setNotificationEnabled(false)  // opt out
 
 // iOS (iosMain): present from Swift/Kotlin
 SharinganViewController(): UIViewController
+presentSharingan(animated: Boolean = true)  // presents over topmost VC, any thread
+
+// iOS Swift facade spellings (Kotlin top-level functions map to SharinganViewControllerKt):
+// SharinganViewControllerKt.SharinganViewController()  → UIViewController
+// SharinganViewControllerKt.presentSharingan(animated: true)
 
 // Compose (debug artifact only, package dev.sharingan.ui)
 @Composable SharinganScreen(modifier, darkTheme = isSystemInDarkTheme(), store = Sharingan.store)
@@ -102,3 +107,5 @@ SharinganViewController(): UIViewController
 - The Ktor plugin rethrows transport failures untouched after recording them (statusCode null, error set).
 - Thread-safe: store updates are atomic CAS; loggers callable from any thread.
 - Min targets: Android API 24, iOS arm64 + simulator arm64. Requires Ktor 3.x for the plugin.
+- KMP/iOS: dependency must be `api(...)` in `iosMain` (not just `commonMain`) and the framework block must `export(...)` it — without both, Kotlin/Native emits an empty header.
+- XCFramework build tasks: `./gradlew :sharingan:assembleSharinganReleaseXCFramework` (debug tool) and `./gradlew :sharingan-noop:assembleSharinganReleaseXCFramework` (inert twin); outputs at `<module>/build/XCFrameworks/release/Sharingan.xcframework`.

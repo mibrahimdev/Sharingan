@@ -24,8 +24,8 @@ public fun SharinganViewController(): UIViewController = UIViewController(nibNam
  *   presenting" warning on rapid double-calls).
  *
  * ```swift
- * // Swift (global function exported from your shared framework)
- * presentSharingan(animated: true)
+ * // Swift
+ * SharinganViewControllerKt.presentSharingan(animated: true)
  * ```
  */
 @ObjCName("presentSharingan", swiftName = "presentSharingan")

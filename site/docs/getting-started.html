@@ -33,8 +33,10 @@
   <aside class="docs-side">
     <div class="side-group">
       <p class="side-title">Getting started</p>
-      <a href="#install" class="here">Install</a>
+      <a href="#install" class="here">Get the artifacts</a>
+      <a href="#install-android">Android</a>
       <a href="#kmp">Kotlin Multiplatform</a>
+      <a href="#xcframework">XCFramework (Swift)</a>
       <a href="#http">Capture HTTP</a>
       <a href="#open">Open the browser</a>
       <a href="#release">Release safety</a>
@@ -55,7 +57,22 @@
     Android, capture starts from a manifest-merged <code>ContentProvider</code>, so there is
     nothing to call.</p>
 
-    <h2 id="install">Install — Android app</h2>
+    <h2 id="install">Get the artifacts</h2>
+    <p>Sharingan is not yet on Maven Central. Until it is, publish locally:</p>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>terminal<button class="cb-copy" data-copy="clone">copy</button></div>
+      <pre id="copy-clone"><code>git clone https://github.com/mibrahimdev/Sharingan &amp;&amp; cd Sharingan
+./gradlew publishToMavenLocal</code></pre>
+    </div>
+    <p>Then add <code>mavenLocal()</code> to your repositories
+    (<code>settings.gradle.kts</code> →
+    <code>dependencyResolutionManagement { repositories { mavenLocal(); … } }</code>).</p>
+    <div class="callout"><b>Tested versions:</b> Sharingan 0.1.0 → Kotlin <b>2.4.0</b>,
+    Ktor <b>3.5.0</b>, Compose Multiplatform <b>1.11.1</b>, AGP 8.13. Later versions may
+    work but are unverified — Kotlin/Native has no cross-compiler-version binary
+    compatibility guarantee, so match the Kotlin version exactly.</div>
+
+    <h2 id="install-android">Install — Android app</h2>
     <div class="codeblock">
       <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>app/build.gradle.kts<button class="cb-copy" data-copy="install">copy</button></div>
       <pre id="copy-install"><code>dependencies {
@@ -69,24 +86,64 @@
     HTTP plugin.</p>
 
     <h2 id="kmp">Install — Kotlin Multiplatform (shared module + iOS)</h2>
-    <p>Gradle resolves one dependency list for <code>commonMain</code>, so select the
-    artifact with a property:</p>
+    <p>Gradle resolves one dependency list per source set, so pick the artifact with a
+    property — and note both iOS requirements: the dependency must be <code>api</code> <b>in
+    <code>iosMain</code></b> (not <code>commonMain</code>), and the framework block must
+    <code>export(...)</code> it. Without both, Kotlin/Native generates an empty header and
+    your Swift code won't see Sharingan at all.</p>
     <div class="codeblock">
       <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>shared/build.gradle.kts<button class="cb-copy" data-copy="kmp">copy</button></div>
       <pre id="copy-kmp"><code>kotlin {
+    <span class="k">val</span> sharinganArtifact = <span class="k">if</span> (providers.gradleProperty(<span class="s">"release"</span>).isPresent)
+        <span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span> <span class="k">else</span> <span class="s">"dev.sharingan:sharingan:0.1.0"</span>
+
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target -&gt;
+        target.binaries.framework {
+            baseName = <span class="s">"shared"</span>
+            export(sharinganArtifact)   <span class="c">// surfaces Sharingan in shared.h</span>
+        }
+    }
+
     sourceSets {
         commonMain.dependencies {
-            <span class="k">if</span> (providers.gradleProperty(<span class="s">"release"</span>).isPresent) {
-                implementation(<span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span>)
-            } <span class="k">else</span> {
-                implementation(<span class="s">"dev.sharingan:sharingan:0.1.0"</span>)
-            }
+            implementation(sharinganArtifact)
+        }
+        iosMain.dependencies {
+            api(sharinganArtifact)      <span class="c">// export() requires api at THIS source set</span>
         }
     }
 }</code></pre>
     </div>
-    <p>Build release artifacts with <code>-Prelease</code>. Kotlin/Native dead-code
-    elimination additionally strips whatever the no-op doesn't reference.</p>
+    <div class="callout"><b>⚠ The <code>-Prelease</code> flag must reach every build that
+    produces the framework Xcode links</b> — including the Gradle invocation inside your
+    Xcode build phase (<code>./gradlew :shared:embedAndSignAppleFrameworkForXcode
+    -Prelease</code>). If the flag is missing there, a debug framework silently overwrites
+    your noop one.</div>
+    <p>Kotlin/Native dead-code elimination additionally strips whatever the no-op doesn't
+    reference.</p>
+
+    <h2 id="xcframework">Install — Pure Swift app (XCFramework)</h2>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>terminal<button class="cb-copy" data-copy="xcf">copy</button></div>
+      <pre id="copy-xcf"><code>./gradlew :sharingan:assembleSharinganReleaseXCFramework        <span class="c"># debug-tool build</span>
+./gradlew :sharingan-noop:assembleSharinganReleaseXCFramework   <span class="c"># inert twin</span></code></pre>
+    </div>
+    <p>Outputs land in <code>sharingan/build/XCFrameworks/release/Sharingan.xcframework</code>
+    and <code>sharingan-noop/build/XCFrameworks/release/Sharingan.xcframework</code> — same
+    framework name on purpose, so <code>import Sharingan</code> compiles in every
+    configuration and your build settings decide which one links:</p>
+    <ol>
+      <li>Copy both, e.g. <code>Vendor/Debug/Sharingan.xcframework</code> and
+      <code>Vendor/Release/Sharingan.xcframework</code>.</li>
+      <li>Add one of them to the target (General → Frameworks → Embed &amp; Sign), then make
+      both the search path <b>and</b> the embed input configuration-dependent: set
+      <code>FRAMEWORK_SEARCH_PATHS = $(SRCROOT)/Vendor/Debug</code> for Debug and
+      <code>…/Release</code> for Release. Linking one variant but embedding the other
+      dyld-crashes at launch.</li>
+      <li><code>import Sharingan</code>, then
+      <code>SharinganViewControllerKt.presentSharingan(animated: true)</code>.</li>
+    </ol>
+    <p>Don't mix this with the Maven/KMP path in one app — pick one.</p>
 
     <h2 id="http">Capture HTTP — the Ktor plugin</h2>
     <div class="codeblock">
@@ -113,7 +170,7 @@
     <table class="api">
       <tr><th>Platform</th><th>Entry point</th></tr>
       <tr><td>Android</td><td>Tap the <b>capture notification</b> (appears on first event), or call <code>Sharingan.show(context)</code></td></tr>
-      <tr><td>iOS</td><td>Present <code>SharinganViewController()</code> from Swift — sheet, push, debug menu, or shake</td></tr>
+      <tr><td>iOS</td><td><code>SharinganViewControllerKt.presentSharingan(animated: true)</code> (one call, any thread), or embed <code>SharinganViewControllerKt.SharinganViewController()</code> yourself</td></tr>
     </table>
     <p>The Android notification shows per-protocol counters, a three-event ticker when
     expanded, and a Pause/Resume action. It is silent and updates in place. Two platform
@@ -126,8 +183,12 @@
     hides it on most devices. Wire <code>Sharingan.show(context)</code> to a debug-drawer
     button or shake gesture so the browser is always reachable.</div>
     <p>On iOS the view controller is the platform-conventional entry; everything else —
-    capture API, screens, share sheet — behaves identically on both platforms. A SwiftUI
-    wrapper recipe is in <a href="integrations.html#ios">Integrations</a>.</p>
+    capture API, screens, share sheet — behaves identically on both platforms.</p>
+    <div class="callout"><b>No plist key needed.</b> Compose Multiplatform 1.11 crashes host
+    apps whose Info.plist lacks <code>CADisableMinimumFrameDurationOnPhone</code>; Sharingan
+    disables that strict check so the viewer can never take your app down. Adding the key
+    yourself is still worthwhile on ProMotion devices — it unlocks 120&nbsp;Hz.</div>
+    <p>A SwiftUI wrapper recipe is in <a href="integrations.html#ios">Integrations</a>.</p>
 
     <h2 id="release">Release safety — what "no effect" means</h2>
     <ul>

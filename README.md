@@ -42,6 +42,23 @@ Requirements: Android API 24+, iOS arm64 + simulator arm64, Ktor 3.x for the HTT
 
 ## Setup
 
+### Get the artifacts
+
+Sharingan is not yet on Maven Central. Until it is, publish locally:
+
+```bash
+git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
+./gradlew publishToMavenLocal
+```
+
+and add `mavenLocal()` to your repositories (`settings.gradle.kts` →
+`dependencyResolutionManagement { repositories { mavenLocal(); ... } }`).
+
+**Tested versions:** Sharingan 0.1.0 → Kotlin **2.4.0**, Ktor **3.5.0**,
+Compose Multiplatform **1.11.1**, AGP 8.13. Later versions may work but are
+unverified — Kotlin/Native has no cross-compiler-version binary
+compatibility guarantee, so match the Kotlin version exactly.
+
 ### Android app (two lines)
 
 ```kotlin
@@ -55,24 +72,66 @@ That's the whole integration story for build types: debug builds get capture + U
 
 ### Kotlin Multiplatform app (shared module + iOS)
 
-Gradle resolves one dependency list for `commonMain`, so pick the artifact with a property:
+Gradle resolves one dependency list per source set, so pick the artifact with
+a property — and note both iOS requirements: the dependency must be `api` **in
+`iosMain`** (not `commonMain`), and the framework block must `export(...)` it.
+Without both, Kotlin/Native generates an empty header and your Swift code
+won't see Sharingan at all.
 
 ```kotlin
 // shared/build.gradle.kts
 kotlin {
+    val sharinganArtifact = if (providers.gradleProperty("release").isPresent)
+        "dev.sharingan:sharingan-noop:0.1.0" else "dev.sharingan:sharingan:0.1.0"
+
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "shared"
+            export(sharinganArtifact)   // surfaces Sharingan in shared.h
+        }
+    }
+
     sourceSets {
         commonMain.dependencies {
-            if (providers.gradleProperty("release").isPresent) {
-                implementation("dev.sharingan:sharingan-noop:0.1.0")
-            } else {
-                implementation("dev.sharingan:sharingan:0.1.0")
-            }
+            implementation(sharinganArtifact)
+        }
+        iosMain.dependencies {
+            api(sharinganArtifact)      // export() requires api at THIS source set
         }
     }
 }
 ```
 
-Build release artifacts with `-Prelease`. (Kotlin/Native dead-code elimination also strips whatever the no-op artifact doesn't reference.)
+> ⚠️ **The `release` property must reach every build that produces the
+> framework Xcode links** — including the Gradle invocation inside your Xcode
+> build phase (`./gradlew :shared:embedAndSignAppleFrameworkForXcode
+> -Prelease`). If the flag is missing there, a debug framework silently
+> overwrites your noop one.
+
+### Pure Swift app (no Kotlin, XCFramework)
+
+```bash
+./gradlew :sharingan:assembleSharinganReleaseXCFramework        # debug-tool build
+./gradlew :sharingan-noop:assembleSharinganReleaseXCFramework   # inert twin
+```
+
+Outputs land in `sharingan/build/XCFrameworks/release/Sharingan.xcframework`
+and `sharingan-noop/build/XCFrameworks/release/Sharingan.xcframework` — same
+framework name on purpose, so `import Sharingan` compiles in every
+configuration and your build settings decide which one links:
+
+1. Copy both, e.g. `Vendor/Debug/Sharingan.xcframework` and
+   `Vendor/Release/Sharingan.xcframework`.
+2. Add one of them to the target (General → Frameworks → Embed & Sign), then
+   make both the search path **and the embed input** configuration-dependent:
+   set `FRAMEWORK_SEARCH_PATHS = $(SRCROOT)/Vendor/Debug` for Debug and
+   `…/Release` for Release, and reference the framework in the Embed
+   Frameworks phase via `$(FRAMEWORK_SEARCH_PATHS)`. Linking one variant but
+   embedding the other dyld-crashes at launch — verify the embedded framework
+   in the built `.app` matches the configuration.
+3. `import Sharingan`, then `SharinganViewControllerKt.presentSharingan(animated: true)`.
+
+Don't mix this with the Maven/KMP path in one app — pick one.
 
 ## Quick start
 
@@ -137,7 +196,7 @@ More adapters (KMQTT/HiveMQ/Paho callbacks, full Kable wiring, shake-to-open) li
 | Platform | Entry point |
 |---|---|
 | Android | Tap the **capture notification** (appears on first event), or `Sharingan.show(context)` |
-| iOS | Present `SharinganViewController()` from Swift (sheet, push, debug menu, shake) |
+| iOS | `SharinganViewControllerKt.presentSharingan(animated: true)` (one call, any thread), or embed `SharinganViewControllerKt.SharinganViewController()` yourself |
 
 ### Android
 
@@ -152,18 +211,30 @@ iOS has no sticky-notification equivalent; the view controller is the platform-c
 
 ```swift
 import SwiftUI
-import Sharingan // your shared framework
+import shared // your shared framework
 
+// One-call presentation (topmost view controller, any thread):
+SharinganViewControllerKt.presentSharingan(animated: true)
+
+// Or embed/present the view controller yourself:
 struct SharinganView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         SharinganViewControllerKt.SharinganViewController()
     }
     func updateUIViewController(_ vc: UIViewController, context: Context) {}
 }
-
-// usage
 .sheet(isPresented: $showLogs) { SharinganView() }
 ```
+
+Two iOS notes:
+
+- **No plist key needed.** Compose Multiplatform 1.11 crashes host apps whose
+  Info.plist lacks `CADisableMinimumFrameDurationOnPhone`; Sharingan disables
+  that strict check so the viewer can never take your app down. Adding the key
+  yourself is still worthwhile on ProMotion devices — it unlocks 120 Hz.
+- **Keep your shared module lean.** If you only capture HTTP (no custom debug
+  UI), you do **not** need any Compose Multiplatform dependencies of your own —
+  Sharingan brings its UI with it.
 
 ## Sharing & exporting
 

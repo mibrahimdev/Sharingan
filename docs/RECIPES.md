@@ -42,8 +42,12 @@ private fun Peripheral.nameOrId() = name ?: identifier.toString()
 
 ```swift
 import SwiftUI
-import Sharingan // your shared framework
+import shared // your shared framework
 
+// No-wrapper alternative — presents over the topmost view controller, any thread:
+SharinganViewControllerKt.presentSharingan(animated: true)
+
+// Or embed the view controller yourself:
 struct SharinganView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         SharinganViewControllerKt.SharinganViewController()

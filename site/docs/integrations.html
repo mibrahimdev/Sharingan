@@ -150,8 +150,12 @@ peripheral.observe(hrCharacteristic).onEach { bytes -&gt;
     <div class="codeblock">
       <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>SharinganView.swift<button class="cb-copy" data-copy="swift">copy</button></div>
       <pre id="copy-swift"><code><span class="k">import</span> SwiftUI
-<span class="k">import</span> Sharingan <span class="c">// your shared framework</span>
+<span class="k">import</span> shared <span class="c">// your shared framework</span>
 
+<span class="c">// No-wrapper alternative — presents over topmost VC, any thread:</span>
+SharinganViewControllerKt.presentSharingan(animated: <span class="n">true</span>)
+
+<span class="c">// Or embed the view controller yourself:</span>
 <span class="k">struct</span> <span class="f">SharinganView</span>: UIViewControllerRepresentable {
     <span class="k">func</span> <span class="f">makeUIViewController</span>(context: Context) -&gt; UIViewController {
         SharinganViewControllerKt.SharinganViewController()
