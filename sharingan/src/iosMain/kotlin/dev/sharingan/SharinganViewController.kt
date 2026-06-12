@@ -31,10 +31,18 @@ public fun SharinganViewController(): UIViewController = ComposeUIViewController
 
 /**
  * Presents the log browser over the topmost view controller of the key
- * window. Safe to call from any thread; no-ops if no window is attached yet.
+ * window. Safe to call from any thread.
+ *
+ * No-ops when:
+ * - no key window is attached (app not yet foregrounded, or running in an
+ *   extension context without a scene);
+ * - a presentation or dismissal is already in flight on the resolved
+ *   topmost controller (prevents UIKit's "attempt to present … already
+ *   presenting" warning on rapid double-calls).
  *
  * ```swift
- * SharinganViewControllerKt.presentSharingan(animated:)
+ * // Swift (global function exported from your shared framework)
+ * presentSharingan(animated: true)
  * ```
  */
 @ObjCName("presentSharingan", swiftName = "presentSharingan")
@@ -46,7 +54,13 @@ public fun presentSharingan(animated: Boolean = true) {
             .flatMap { it.windows.filterIsInstance<UIWindow>() }
             .firstOrNull { it.keyWindow }
             ?.rootViewController ?: return@dispatch_async
-        topmostViewController(root)
-            .presentViewController(SharinganViewController(), animated = animated, completion = null)
+        val top = topmostViewController(root)
+        // Guard: UIKit silently swallows a present() while another
+        // presentation/dismissal is already in flight; make the no-op explicit.
+        if (top.presentedViewController != null ||
+            top.isBeingDismissed() ||
+            top.isBeingPresented()
+        ) return@dispatch_async
+        top.presentViewController(SharinganViewController(), animated = animated, completion = null)
     }
 }
