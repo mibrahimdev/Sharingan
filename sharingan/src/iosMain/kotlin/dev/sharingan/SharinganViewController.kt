@@ -57,10 +57,7 @@ public fun presentSharingan(animated: Boolean = true) {
         val top = topmostViewController(root)
         // Guard: UIKit silently swallows a present() while another
         // presentation/dismissal is already in flight; make the no-op explicit.
-        if (top.presentedViewController != null ||
-            top.isBeingDismissed() ||
-            top.isBeingPresented()
-        ) return@dispatch_async
+        if (top.isBeingDismissed() || top.isBeingPresented()) return@dispatch_async
         top.presentViewController(SharinganViewController(), animated = animated, completion = null)
     }
 }
