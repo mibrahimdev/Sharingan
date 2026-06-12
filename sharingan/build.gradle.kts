@@ -1,5 +1,6 @@
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -22,11 +23,22 @@ kotlin {
         }
     }
 
+    // Same baseName in :sharingan and :sharingan-noop — pure-Swift consumers
+    // swap debug/noop per build configuration by search path, so
+    // `import Sharingan` must resolve identically in both.
+    val sharinganXCFramework = XCFramework("Sharingan")
     iosArm64()
     iosSimulatorArm64 {
         // The default KGP simulator id may not exist in newer Xcodes; pin to
         // a device present on this machine (xcrun simctl list devices).
         testRuns.configureEach { deviceId = "iPhone 17 Pro" }
+    }
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "Sharingan"
+            isStatic = true
+            sharinganXCFramework.add(this)
+        }
     }
 
     sourceSets {

@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -19,8 +20,14 @@ kotlin {
         }
     }
 
-    iosArm64()
-    iosSimulatorArm64()
+    val sharinganXCFramework = XCFramework("Sharingan")
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "Sharingan"
+            isStatic = true
+            sharinganXCFramework.add(this)
+        }
+    }
 
     sourceSets {
         all { languageSettings.optIn("kotlin.experimental.ExperimentalObjCName") }
