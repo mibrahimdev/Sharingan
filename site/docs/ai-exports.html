@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI exports — Sharingan docs</title>
+<meta name="description" content="Sharingan exports structured Markdown, curl and JSON built for AI agents — Copy for AI agent, public formatter API, llms.txt reference.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23e23b3b'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%230b0a09'/%3E%3Ccircle cx='16' cy='8.5' r='2.4' fill='%230b0a09'/%3E%3Ccircle cx='9.5' cy='19.5' r='2.4' fill='%230b0a09'/%3E%3Ccircle cx='22.5' cy='19.5' r='2.4' fill='%230b0a09'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../index.html">
+      <svg class="eye" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#e23b3b"/><circle cx="16" cy="16" r="6" fill="#0b0a09"/><circle cx="16" cy="8.5" r="2.4" fill="#0b0a09"/><circle cx="9.5" cy="19.5" r="2.4" fill="#0b0a09"/><circle cx="22.5" cy="19.5" r="2.4" fill="#0b0a09"/></svg>
+      sharingan
+    </a>
+    <div class="nav-links">
+      <a href="getting-started.html">docs</a>
+      <a href="integrations.html" class="hide-sm">integrations</a>
+      <a href="ai-exports.html" class="active hide-sm">ai&nbsp;exports</a>
+      <a class="nav-gh" href="https://github.com/mibrahimdev/Sharingan">github&nbsp;↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-grid">
+  <aside class="docs-side">
+    <div class="side-group">
+      <p class="side-title">AI exports</p>
+      <a href="#workflow" class="here">The workflow</a>
+      <a href="#format">What the agent receives</a>
+      <a href="#api">Export API</a>
+      <a href="#agents-md">AGENTS.md / llms.txt</a>
+      <a href="#privacy">Privacy guarantees</a>
+    </div>
+    <div class="side-group">
+      <p class="side-title">Guides</p>
+      <a href="getting-started.html">Getting started</a>
+      <a href="integrations.html">Integrations</a>
+    </div>
+  </aside>
+
+  <main class="docs-main">
+    <p class="kicker">ai exports</p>
+    <h1>Tap. Paste.<br><em>Fixed.</em></h1>
+    <p class="lede">Most debugging time isn't finding the bug — it's transcribing it.
+    Sharingan's exports turn "can you describe what happened?" into a single structured
+    paste that an AI agent (or a teammate) can act on immediately.</p>
+
+    <h2 id="workflow">The workflow</h2>
+    <p>Debugging with a user, a QA engineer, or your own device in hand:</p>
+    <ul>
+      <li>Open Sharingan (capture notification, debug drawer, or shake).</li>
+      <li>Optionally open the failing event — the share sheet works from the list or the detail view.</li>
+      <li>Share → <b>Copy for AI agent</b>.</li>
+      <li>Paste into Claude, your agent harness, or the bug ticket.</li>
+    </ul>
+    <p>That's the whole loop. The paste contains everything the agent needs to reason
+    about the failure — no screenshots of JSON, no "what was the status code?" round trips.</p>
+
+    <h2 id="format">What the agent receives</h2>
+    <p>Structured Markdown with stable field labels, the body fenced and typed:</p>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>clipboard after "Copy for AI agent"<button class="cb-copy" data-copy="md">copy</button></div>
+      <pre id="copy-md"><code><span class="c">## HTTP 500 — GET /v1/streams/cam-12</span>
+<span class="k">host</span>: api.iot-fleet.dev
+<span class="k">duration</span>: 10 214 ms (TTFB 10 180 · download 34)
+<span class="k">request</span>:
+  Authorization: ••••
+  Accept: application/json
+<span class="k">response body</span>:
+```json
+{ "error": "upstream_timeout",
+  "stream": "cam-12", "retry_after": 30 }
+```</code></pre>
+    </div>
+    <p>Why this beats a HAR file or a screenshot:</p>
+    <ul>
+      <li><b>Fenced, typed bodies</b> — <code>```json</code> blocks parse deterministically;
+      models don't have to guess where the payload starts.</li>
+      <li><b>Stable labels</b> — <code>host</code>, <code>duration</code>,
+      <code>request</code> are the same in every export, so agent prompts and scripts can
+      rely on them.</li>
+      <li><b>Whole-session export</b> — share the full capture and the agent sees the 401 →
+      refresh → retry → 500 sequence in order, across protocols.</li>
+    </ul>
+
+    <h2 id="api">Export API — every formatter is public</h2>
+    <p>The share sheet has no private magic. Scripts, tests and agent harnesses can produce
+    byte-identical output:</p>
+    <table class="api">
+      <tr><th>Function</th><th>Produces</th></tr>
+      <tr><td><code>SharinganExport.agentMarkdown(event)</code></td><td>One event as structured Markdown (the "Copy for AI agent" payload)</td></tr>
+      <tr><td><code>SharinganExport.agentMarkdown(events)</code></td><td>Whole session with a counts header</td></tr>
+      <tr><td><code>SharinganExport.curl(httpEvent)</code></td><td>Reproducible curl command — redactions stay masked</td></tr>
+      <tr><td><code>SharinganExport.json(event)</code></td><td>Machine-readable single event</td></tr>
+      <tr><td><code>SharinganExport.sessionJson(events)</code></td><td>Full session with tool metadata</td></tr>
+      <tr><td><code>SharinganExport.summary(events)</code></td><td>Human digest, one line per event</td></tr>
+    </table>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>e.g. attach a session to a bug report automatically<button class="cb-copy" data-copy="exapi">copy</button></div>
+      <pre id="copy-exapi"><code><span class="k">val</span> report = SharinganExport.agentMarkdown(Sharingan.events.value)
+bugTracker.attach(<span class="s">"network-session.md"</span>, report)</code></pre>
+    </div>
+
+    <h2 id="agents-md">AGENTS.md &amp; llms.txt — for the agent's side</h2>
+    <p>The repository ships a terse, complete API reference designed for machine
+    consumption: <a href="https://github.com/mibrahimdev/Sharingan/blob/main/AGENTS.md">AGENTS.md</a>,
+    mirrored at <code>llms.txt</code>. Point your coding agent at it and it knows the full
+    capture, control and export surface without reading source.</p>
+    <div class="callout"><b>Team setup that works well:</b> add a line to your project's
+    agent instructions — <i>"Network/MQTT/BLE traffic is captured by Sharingan; ask the
+    user to share 'Copy for AI agent' output, and consult its llms.txt for the API."</i>
+    Your agent then knows to request exactly the artifact Sharingan produces.</div>
+
+    <h2 id="privacy">Privacy guarantees</h2>
+    <ul>
+      <li><b>Redaction precedes storage.</b> Header masking happens at capture time —
+      exports can't leak what the buffer never held, and the curl export keeps masks in
+      place.</li>
+      <li><b>Memory only.</b> The ring buffer (default 300 events) lives in process memory.
+      Nothing touches disk; process death clears everything.</li>
+      <li><b>Release builds carry nothing.</b> The no-op artifact has no capture path, no
+      UI, no notification — see <a href="getting-started.html#release">release safety</a>.</li>
+    </ul>
+
+    <div class="next-prev">
+      <a href="integrations.html">← Integrations</a>
+      <a href="../index.html">Overview →</a>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>👁 sharingan · Apache-2.0</span>
+    <span class="spacer"></span>
+    <a href="getting-started.html">getting started</a>
+    <a href="integrations.html">integrations</a>
+    <a href="ai-exports.html">ai exports</a>
+    <a href="https://github.com/mibrahimdev/Sharingan">github ↗</a>
+  </div>
+</footer>
+
+<script src="../assets/site.js" defer></script>
+</body>
+</html>

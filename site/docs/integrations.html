@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrations — Sharingan docs</title>
+<meta name="description" content="Wire Sharingan into Ktor, any MQTT client, Kable BLE, OkHttp or NSURLSession. Client-agnostic capture, one line per callback.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23e23b3b'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%230b0a09'/%3E%3Ccircle cx='16' cy='8.5' r='2.4' fill='%230b0a09'/%3E%3Ccircle cx='9.5' cy='19.5' r='2.4' fill='%230b0a09'/%3E%3Ccircle cx='22.5' cy='19.5' r='2.4' fill='%230b0a09'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../index.html">
+      <svg class="eye" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#e23b3b"/><circle cx="16" cy="16" r="6" fill="#0b0a09"/><circle cx="16" cy="8.5" r="2.4" fill="#0b0a09"/><circle cx="9.5" cy="19.5" r="2.4" fill="#0b0a09"/><circle cx="22.5" cy="19.5" r="2.4" fill="#0b0a09"/></svg>
+      sharingan
+    </a>
+    <div class="nav-links">
+      <a href="getting-started.html">docs</a>
+      <a href="integrations.html" class="active hide-sm">integrations</a>
+      <a href="ai-exports.html" class="hide-sm">ai&nbsp;exports</a>
+      <a class="nav-gh" href="https://github.com/mibrahimdev/Sharingan">github&nbsp;↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-grid">
+  <aside class="docs-side">
+    <div class="side-group">
+      <p class="side-title">Integrations</p>
+      <a href="#ktor" class="here">Ktor (HTTP)</a>
+      <a href="#okhttp">OkHttp / NSURLSession</a>
+      <a href="#mqtt">MQTT clients</a>
+      <a href="#ble">BLE — Kable</a>
+      <a href="#ios">iOS — SwiftUI</a>
+      <a href="#extras">Extras</a>
+    </div>
+    <div class="side-group">
+      <p class="side-title">Guides</p>
+      <a href="getting-started.html">Getting started</a>
+      <a href="ai-exports.html">AI exports</a>
+    </div>
+  </aside>
+
+  <main class="docs-main">
+    <p class="kicker">integrations</p>
+    <h1>Client-agnostic by design.<br><em>One line</em> per callback.</h1>
+    <p class="lede">HTTP capture is automatic with the Ktor plugin. For everything else,
+    Sharingan deliberately ships no client adapters — your MQTT/BLE library already has
+    callbacks, and one logger call inside each is the whole integration. No version
+    coupling, no transitive dependencies.</p>
+
+    <h2 id="ktor">Ktor — automatic HTTP capture</h2>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>zero-config<button class="cb-copy" data-copy="ktor1">copy</button></div>
+      <pre id="copy-ktor1"><code><span class="k">val</span> client = <span class="f">HttpClient</span> {
+    install(SharinganKtor)
+}</code></pre>
+    </div>
+    <p>Tunable when you need it:</p>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>full configuration<button class="cb-copy" data-copy="ktor2">copy</button></div>
+      <pre id="copy-ktor2"><code>install(SharinganKtor) {
+    captureBodies = <span class="n">true</span>            <span class="c">// default</span>
+    maxBodyBytes = <span class="n">64</span> * <span class="n">1024</span>        <span class="c">// default — longer bodies truncate with a marker</span>
+    redactedHeaders = setOf(<span class="s">"Authorization"</span>, <span class="s">"X-Api-Key"</span>)  <span class="c">// additive to defaults</span>
+}</code></pre>
+    </div>
+    <ul>
+      <li>Default redactions: <code>Authorization</code>, <code>Proxy-Authorization</code>,
+      <code>Cookie</code>, <code>Set-Cookie</code> — masked to <code>••••</code> before the
+      event is stored.</li>
+      <li>Bodies are captured only for textual content types (JSON, XML, text,
+      form-urlencoded); streaming and binary responses are never read.</li>
+      <li>Timing records two phases — TTFB and Download — rendered as a waterfall in the
+      detail view.</li>
+    </ul>
+
+    <h2 id="okhttp">OkHttp / NSURLSession — manual logging</h2>
+    <p>Using OkHttp or NSURLSession directly today? Log through the public
+    <code>HttpLogger</code> — same event model, same UI, same exports:</p>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>e.g. inside an OkHttp interceptor you own<button class="cb-copy" data-copy="manual">copy</button></div>
+      <pre id="copy-manual"><code>Sharingan.http.log(
+    method = <span class="s">"GET"</span>,
+    url = <span class="s">"https://api.example.dev/v1/devices"</span>,
+    statusCode = <span class="n">200</span>,
+    durationMillis = <span class="n">214</span>,
+    requestHeaders = listOf(<span class="s">"Accept"</span> <span class="k">to</span> <span class="s">"application/json"</span>),
+    responseBody = bodyText,          <span class="c">// JSON renders pretty-printed</span>
+    timing = listOf(TimingPhase(<span class="s">"TTFB"</span>, <span class="n">180</span>), TimingPhase(<span class="s">"Download"</span>, <span class="n">34</span>)),
+)</code></pre>
+    </div>
+    <div class="callout"><b>Coming up:</b> a first-class OkHttp interceptor —
+    <code>sharingan-okhttp</code> — is designed and on the roadmap: application-interceptor
+    capture with the same config vocabulary as the Ktor plugin. Until it ships, manual
+    logging above is the supported path.</div>
+
+    <h2 id="mqtt">MQTT — clients with callbacks (KMQTT, HiveMQ, Paho…)</h2>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>wire each callback<button class="cb-copy" data-copy="mqtt">copy</button></div>
+      <pre id="copy-mqtt"><code>client.subscribe(filter, qos) { <span class="c">/* granted */</span> Sharingan.mqtt.subscribed(filter, qos) }
+
+client.onMessage { msg -&gt;
+    Sharingan.mqtt.received(msg.topic, msg.payload.decodeToString(), msg.qos)
+}
+
+client.publish(topic, bytes, qos, retained).also {
+    Sharingan.mqtt.publish(topic, bytes.decodeToString(), qos, retained)
+}</code></pre>
+    </div>
+    <div class="callout"><b>Tip:</b> log payloads as JSON text whenever possible —
+    Sharingan pretty-prints and syntax-colors valid JSON in the detail view <i>and</i> in
+    agent exports.</div>
+
+    <h2 id="ble">BLE — Kable</h2>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>connection state + notifications<button class="cb-copy" data-copy="ble">copy</button></div>
+      <pre id="copy-ble"><code><span class="k">val</span> peripheral = scope.peripheral(advertisement)
+
+peripheral.state.onEach { state -&gt;
+    <span class="k">when</span> (state) {
+        <span class="k">is</span> State.Connected -&gt; Sharingan.ble.connect(peripheral.nameOrId())
+        <span class="k">is</span> State.Disconnected -&gt; Sharingan.ble.disconnect(peripheral.nameOrId(), state.status?.toString())
+        <span class="k">else</span> -&gt; Unit
+    }
+}.launchIn(scope)
+
+peripheral.observe(hrCharacteristic).onEach { bytes -&gt;
+    Sharingan.ble.notify(
+        device = peripheral.nameOrId(),
+        characteristic = <span class="s">"Heart Rate Measurement"</span>,
+        uuid = hrCharacteristic.characteristicUuid.toString(),
+        value = <span class="s">"""{"bpm":${bytes.toHeartRate()}}"""</span>,
+    )
+}.launchIn(scope)
+
+<span class="k">private fun</span> Peripheral.<span class="f">nameOrId</span>() = name ?: identifier.toString()</code></pre>
+    </div>
+    <p>Errors get a first-class call too:
+    <code>Sharingan.ble.error(device, message, characteristic, uuid)</code> — GATT status
+    codes land on the failure rail like any HTTP 500.</p>
+
+    <h2 id="ios">iOS — SwiftUI wrapper</h2>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>SharinganView.swift<button class="cb-copy" data-copy="swift">copy</button></div>
+      <pre id="copy-swift"><code><span class="k">import</span> SwiftUI
+<span class="k">import</span> Sharingan <span class="c">// your shared framework</span>
+
+<span class="k">struct</span> <span class="f">SharinganView</span>: UIViewControllerRepresentable {
+    <span class="k">func</span> <span class="f">makeUIViewController</span>(context: Context) -&gt; UIViewController {
+        SharinganViewControllerKt.SharinganViewController()
+    }
+    <span class="k">func</span> <span class="f">updateUIViewController</span>(_ vc: UIViewController, context: Context) {}
+}
+
+<span class="c">// usage</span>
+.sheet(isPresented: $showLogs) { SharinganView() }</code></pre>
+    </div>
+
+    <h2 id="extras">Extras</h2>
+    <h3>Shake-to-open (Android)</h3>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>any shake detector<button class="cb-copy" data-copy="shake">copy</button></div>
+      <pre id="copy-shake"><code><span class="c">// on shake trigger:</span>
+Sharingan.show(context)</code></pre>
+    </div>
+    <h3>iOS Live Activity analog (app-side)</h3>
+    <p>iOS doesn't let a library ship a sticky notification. If you want a lock-screen
+    capture card, add an ActivityKit widget extension in <b>your app</b> and drive it from
+    <code>Sharingan.events</code> (via SKIE / KMP-NativeCoroutines) — counters plus the last
+    event line. This stays app-side by design: widget extensions can't ship from a Kotlin
+    library.</p>
+
+    <div class="next-prev">
+      <a href="getting-started.html">← Getting started</a>
+      <a href="ai-exports.html">AI exports →</a>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>👁 sharingan · Apache-2.0</span>
+    <span class="spacer"></span>
+    <a href="getting-started.html">getting started</a>
+    <a href="integrations.html">integrations</a>
+    <a href="ai-exports.html">ai exports</a>
+    <a href="https://github.com/mibrahimdev/Sharingan">github ↗</a>
+  </div>
+</footer>
+
+<script src="../assets/site.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sharingan — see everything your app says. HTTP · MQTT · BLE logging for Kotlin Multiplatform</title>
+<meta name="description" content="Sharingan is an on-device debug logger for Kotlin Multiplatform. Live HTTP, MQTT and Bluetooth capture on iOS & Android, with exports built for AI agents. Zero release impact.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/landing.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23e23b3b'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%230b0a09'/%3E%3Ccircle cx='16' cy='8.5' r='2.4' fill='%230b0a09'/%3E%3Ccircle cx='9.5' cy='19.5' r='2.4' fill='%230b0a09'/%3E%3Ccircle cx='22.5' cy='19.5' r='2.4' fill='%230b0a09'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="index.html">
+      <svg class="eye" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#e23b3b"/><circle cx="16" cy="16" r="6" fill="#0b0a09"/><circle cx="16" cy="8.5" r="2.4" fill="#0b0a09"/><circle cx="9.5" cy="19.5" r="2.4" fill="#0b0a09"/><circle cx="22.5" cy="19.5" r="2.4" fill="#0b0a09"/></svg>
+      sharingan
+    </a>
+    <div class="nav-links">
+      <a href="docs/getting-started.html">docs</a>
+      <a href="docs/integrations.html" class="hide-sm">integrations</a>
+      <a href="docs/ai-exports.html" class="hide-sm">ai&nbsp;exports</a>
+      <a class="nav-gh" href="https://github.com/mibrahimdev/Sharingan">github&nbsp;↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── hero ─────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="hero-iris" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker reveal">kotlin multiplatform · ios &amp; android</p>
+      <h1 class="reveal d1">The eye that sees<br><em>everything</em> your app says.</h1>
+      <p class="lede reveal d2">
+        Sharingan is an on-device debug logger for HTTP, MQTT and Bluetooth.
+        It captures protocol traffic while you use your app, browses it in a
+        built-in terminal-density UI — and exports clean, structured logs made
+        to hand to an <strong>AI&nbsp;agent</strong>.
+      </p>
+      <div class="hero-cta reveal d3">
+        <a class="btn btn-primary" href="docs/getting-started.html">Get started — two lines</a>
+        <a class="btn btn-ghost" href="#agent">Why agents love it</a>
+      </div>
+      <p class="hero-meta reveal d4">Apache-2.0 · API 24+ · iOS arm64 · memory-only, nothing touches disk</p>
+    </div>
+
+    <!-- animated live-capture panel -->
+    <div class="capture reveal d2" aria-hidden="true">
+      <div class="capture-head">
+        <span class="rec"><i></i>REC</span>
+        <span class="capture-title">sharingan · live capture</span>
+        <span class="capture-count" id="cap-count">0 events</span>
+      </div>
+      <div class="capture-body">
+        <div class="row http"><span class="badge ok">200</span><span class="verb">GET</span><span class="path">/v1/devices/d-204/state</span><span class="ms">214ms</span></div>
+        <div class="row mqtt"><span class="badge proto">MQTT</span><span class="verb">PUB</span><span class="path">devices/d-204/telemetry · qos1</span><span class="ms">2.1KB</span></div>
+        <div class="row http"><span class="badge warn">401</span><span class="verb">POST</span><span class="path">/oauth/token</span><span class="ms">187ms</span></div>
+        <div class="row http"><span class="badge ok">200</span><span class="verb">POST</span><span class="path">/oauth/token · retry</span><span class="ms">203ms</span></div>
+        <div class="row ble"><span class="badge proto blue">BLE</span><span class="verb">NTFY</span><span class="path">HR-Monitor-9F · 0x2A37</span><span class="ms">♥ 96</span></div>
+        <div class="row http err"><span class="badge bad">500</span><span class="verb">GET</span><span class="path">/v1/streams/cam-12 · timeout</span><span class="ms">10.2s</span></div>
+        <div class="row mqtt"><span class="badge proto">MQTT</span><span class="verb">RECV</span><span class="path">devices/d-204/commands</span><span class="ms">412B</span></div>
+        <div class="row ble"><span class="badge proto blue">BLE</span><span class="verb">READ</span><span class="path">Battery Level · 0x2A19</span><span class="ms">87%</span></div>
+      </div>
+      <div class="capture-foot">
+        <span>▲ share → <b>copy for AI agent</b></span>
+        <span class="caret">█</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── three protocols ──────────────────────────────────── -->
+<section class="wrap section">
+  <p class="kicker">one buffer, three protocols</p>
+  <h2 class="display">Backend, app and firmware bugs<br>hide <em>between</em> protocols.</h2>
+  <p class="lede">A token refresh fails over HTTP, the device misses its MQTT command, the
+  peripheral notifies garbage over GATT. Sharingan puts all three timelines in one place,
+  in capture order.</p>
+
+  <div class="proto-grid">
+    <article class="proto-card">
+      <h3><span class="tick ok-t">●</span> HTTP</h3>
+      <p>Automatic via the <code>Ktor</code> plugin — method, status, headers, JSON bodies,
+      TTFB/download waterfall. Secrets redacted <em>at capture</em>; streams never consumed.</p>
+      <code class="proto-snippet">install(SharinganKtor)</code>
+    </article>
+    <article class="proto-card">
+      <h3><span class="tick warn-t">●</span> MQTT</h3>
+      <p>Client-agnostic, one line per callback. Publish, receive, subscribe — with QoS
+      and retain flags rendered as badges, broker failures on the failure rail.</p>
+      <code class="proto-snippet">Sharingan.mqtt.received(topic, payload, qos = 1)</code>
+    </article>
+    <article class="proto-card">
+      <h3><span class="tick info-t">●</span> Bluetooth</h3>
+      <p>GATT connect, discover, read, write, notify — log decoded values and they render
+      as syntax-colored JSON. Works with Kable or any client.</p>
+      <code class="proto-snippet">Sharingan.ble.notify(device, char, uuid, value)</code>
+    </article>
+  </div>
+</section>
+
+<!-- ── agent section ────────────────────────────────────── -->
+<section class="wrap section" id="agent">
+  <p class="kicker">the differentiator</p>
+  <h2 class="display">Logs an <em>AI agent</em> can actually read.</h2>
+  <p class="lede">Every other network inspector formats for human eyeballs. Sharingan's
+  share sheet leads with <strong>Copy for AI agent</strong> — structured Markdown an LLM
+  parses reliably. Reproducing a bug becomes: tap, paste, fixed.</p>
+
+  <div class="agent-grid">
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>copied to clipboard<button class="cb-copy" data-copy="agent">copy</button></div>
+      <pre id="copy-agent"><code><span class="c">## HTTP 500 — GET /v1/streams/cam-12</span>
+<span class="k">host</span>: api.iot-fleet.dev
+<span class="k">duration</span>: 10 214 ms (TTFB 10 180 · download 34)
+<span class="k">request</span>:
+  Authorization: ••••
+  Accept: application/json
+<span class="k">response body</span>:
+```json
+{ "error": "upstream_timeout",
+  "stream": "cam-12", "retry_after": 30 }
+```</code></pre>
+    </div>
+    <ul class="agent-points">
+      <li><b>Fenced &amp; typed.</b> Bodies arrive as <code>```json</code> blocks — no OCR-style guessing for the model.</li>
+      <li><b>Secrets stay masked.</b> Redaction happens at capture; exports can't leak what the buffer never held.</li>
+      <li><b>Scriptable.</b> Every formatter is public API: <code>SharinganExport.agentMarkdown(events)</code>, <code>curl(event)</code>, <code>sessionJson(events)</code>.</li>
+      <li><b>llms.txt included.</b> Point your agent at the repo's <code>AGENTS.md</code> / <code>llms.txt</code> for a machine-readable API reference.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── zero release impact ──────────────────────────────── -->
+<section class="wrap section">
+  <p class="kicker">ship with confidence</p>
+  <h2 class="display">In debug: everything.<br>In release: <em>nothing.</em></h2>
+  <p class="lede">The <code>sharingan-noop</code> artifact mirrors the public API and does
+  nothing — no UI, no capture, no notification, no resources. Your release APK doesn't
+  carry a debug tool; it carries an interface.</p>
+
+  <div class="codeblock noop-block">
+    <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>build.gradle.kts — the whole integration<button class="cb-copy" data-copy="gradle">copy</button></div>
+    <pre id="copy-gradle"><code>dependencies {
+    debugImplementation(<span class="s">"dev.sharingan:sharingan:0.1.0"</span>)
+    releaseImplementation(<span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span>)
+}</code></pre>
+  </div>
+  <p class="noop-note">Zero init code on Android — capture starts via a manifest-merged
+  <code>ContentProvider</code>. KMP/iOS setup is <a href="docs/getting-started.html">one Gradle property</a>.</p>
+</section>
+
+<!-- ── screenshots ──────────────────────────────────────── -->
+<section class="section gallery-section">
+  <div class="wrap">
+    <p class="kicker">on device</p>
+    <h2 class="display">Terminal density, <em>phone</em> ergonomics.</h2>
+  </div>
+  <div class="gallery">
+    <figure><img src="assets/screenshots/home-dark.png" loading="lazy" alt="HTTP tab — live list with failure rails"><figcaption>HTTP — failure rails</figcaption></figure>
+    <figure><img src="assets/screenshots/detail-error.png" loading="lazy" alt="500 error detail with timing waterfall and JSON body"><figcaption>Detail — waterfall + JSON</figcaption></figure>
+    <figure><img src="assets/screenshots/share-sheet.png" loading="lazy" alt="Share sheet with Copy for AI agent first"><figcaption>Share — agent first</figcaption></figure>
+    <figure><img src="assets/screenshots/mqtt-dark.png" loading="lazy" alt="MQTT tab with QoS badges"><figcaption>MQTT — QoS badges</figcaption></figure>
+    <figure><img src="assets/screenshots/ble-dark.png" loading="lazy" alt="Bluetooth tab with GATT operations"><figcaption>BLE — GATT ops</figcaption></figure>
+    <figure><img src="assets/screenshots/home-light.png" loading="lazy" alt="Light mode home"><figcaption>Light — follows system</figcaption></figure>
+  </div>
+</section>
+
+<!-- ── quickstart strip ─────────────────────────────────── -->
+<section class="wrap section quickstart">
+  <p class="kicker">sixty seconds</p>
+  <h2 class="display">Install the plugin. <em>Use your app.</em></h2>
+  <div class="qs-steps">
+    <div class="qs-step"><span class="qs-n">01</span><p>Add the two Gradle lines.<br><code>debugImplementation</code> + noop.</p></div>
+    <div class="qs-step"><span class="qs-n">02</span><p><code>install(SharinganKtor)</code> in your HttpClient. MQTT/BLE: one line per callback.</p></div>
+    <div class="qs-step"><span class="qs-n">03</span><p>Use your app. Tap the capture notification — or <code>Sharingan.show(context)</code> / <code>SharinganViewController()</code>.</p></div>
+  </div>
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="docs/getting-started.html">Read the docs</a>
+    <a class="btn btn-ghost" href="docs/integrations.html">Integration recipes</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>👁 sharingan · Apache-2.0</span>
+    <span class="spacer"></span>
+    <a href="docs/getting-started.html">getting started</a>
+    <a href="docs/integrations.html">integrations</a>
+    <a href="docs/ai-exports.html">ai exports</a>
+    <a href="https://github.com/mibrahimdev/Sharingan">github ↗</a>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>
