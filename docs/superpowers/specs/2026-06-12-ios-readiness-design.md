@@ -80,11 +80,12 @@ The iOS consumer journey fails in three independent ways:
 ### 2. XCFramework distribution
 
 - Both modules gain the Kotlin Gradle `XCFramework` DSL: static frameworks,
-  `baseName = "Sharingan"` (`:sharingan`) and `baseName = "SharinganNoop"`
-  (`:sharingan-noop`), targets iosArm64 + iosSimulatorArm64. The DSL registers
-  variant-suffixed tasks; the documented build commands are
-  `./gradlew :sharingan:assembleSharinganReleaseXCFramework` and
-  `./gradlew :sharingan-noop:assembleSharinganNoopReleaseXCFramework`.
+  **`baseName = "Sharingan"` in both modules** — the per-configuration swap only
+  works if `import Sharingan` resolves in every configuration, so the noop
+  differs by output directory, not by module name. Targets iosArm64 +
+  iosSimulatorArm64. The DSL registers variant-suffixed tasks; the documented
+  build commands are `./gradlew :sharingan:assembleSharinganReleaseXCFramework`
+  and `./gradlew :sharingan-noop:assembleSharinganReleaseXCFramework`.
 - The two frameworks must expose an identical header surface. This is asserted,
   not assumed: §4 adds a programmatic header diff. Pure-Swift consumers then
   switch debug/noop per build configuration. Search paths alone are
@@ -144,10 +145,13 @@ deliverable lands, following only the updated docs:
    (no clipping / safe-area violations) and, where reachable, the event-detail
    and share-sheet surfaces.
 3. Fresh pure-Swift app exercising the XCFramework path end to end.
-4. Header-parity gate: programmatically diff
-   `Sharingan.xcframework/ios-arm64/Sharingan.framework/Headers/` against the
-   `SharinganNoop` equivalent — identical apart from the framework name in
-   `module.modulemap`. The noop has never been linked as a standalone framework
+4. Header-parity gate: programmatically diff the generated
+   `Sharingan.framework/Headers/Sharingan.h` (and `module.modulemap`) from the
+   `:sharingan` XCFramework against the `:sharingan-noop` one. With identical
+   baseNames the files should match exactly; any difference must be reviewed
+   and either eliminated or shown to be a documented debug-only symbol (e.g.
+   the `SharinganScreen` composable, which deliberately exists only in the
+   debug artifact). The noop has never been linked as a standalone framework
    before, so this gate is mandatory, not optional.
 
 ### 5. Commit plan (deliverable-shaped)
