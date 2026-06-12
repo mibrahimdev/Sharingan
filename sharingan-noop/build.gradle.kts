@@ -23,6 +23,7 @@ kotlin {
     iosSimulatorArm64()
 
     sourceSets {
+        all { languageSettings.optIn("kotlin.experimental.ExperimentalObjCName") }
         commonMain.dependencies {
             // Mirrors the real artifact's API surface (StateFlow, Ktor plugin
             // types) with no Compose/UI payload — release builds carry ~nothing.

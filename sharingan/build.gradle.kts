@@ -23,9 +23,14 @@ kotlin {
     }
 
     iosArm64()
-    iosSimulatorArm64()
+    iosSimulatorArm64 {
+        // The default KGP simulator id may not exist in newer Xcodes; pin to
+        // a device present on this machine (xcrun simctl list devices).
+        testRuns.configureEach { deviceId = "iPhone 17 Pro" }
+    }
 
     sourceSets {
+        all { languageSettings.optIn("kotlin.experimental.ExperimentalObjCName") }
         commonMain.dependencies {
             // StateFlow types appear in the public API surface.
             api(libs.kotlinx.coroutines.core)
