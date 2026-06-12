@@ -27,7 +27,6 @@ kotlin {
     // swap debug/noop per build configuration by search path, so
     // `import Sharingan` must resolve identically in both.
     val sharinganXCFramework = XCFramework("Sharingan")
-    iosArm64()
     iosSimulatorArm64 {
         // The default KGP simulator id may not exist in newer Xcodes; pin to
         // a device present on this machine (xcrun simctl list devices).

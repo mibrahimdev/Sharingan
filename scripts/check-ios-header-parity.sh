@@ -12,6 +12,9 @@ cd "$(dirname "$0")/.."
 REAL_FW="sharingan/build/XCFrameworks/release/Sharingan.xcframework/ios-arm64/Sharingan.framework"
 NOOP_FW="sharingan-noop/build/XCFrameworks/release/Sharingan.xcframework/ios-arm64/Sharingan.framework"
 
+[ -d "$REAL_FW" ] || { echo "ERROR: run ./gradlew :sharingan:assembleSharinganReleaseXCFramework first"; exit 1; }
+[ -d "$NOOP_FW" ] || { echo "ERROR: run ./gradlew :sharingan-noop:assembleSharinganReleaseXCFramework first"; exit 1; }
+
 fail=0
 
 # --- module.modulemap: must be byte-for-byte identical ---
@@ -29,8 +32,8 @@ fi
 # difference in @interface, method signatures, or __attribute__ annotations
 # is still caught.
 strip_comments() {
-  # Remove /* ... */ comment blocks (multi-line) then blank lines
-  perl -0777 -pe 's|/\*.*?\*/||gs' "$1" | grep -v '^[[:space:]]*$'
+  # Remove /* ... */ comment blocks (multi-line) and // line comments, then blank lines
+  perl -0777 -pe 's|/\*.*?\*/||gs; s|//[^\n]*||g;' "$1" | grep -v '^[[:space:]]*$'
 }
 
 h="Headers/Sharingan.h"
