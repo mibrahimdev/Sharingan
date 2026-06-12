@@ -46,40 +46,72 @@ The iOS consumer journey fails in three independent ways:
 
 - `SharinganViewController()` becomes
   `ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) { SharinganScreen() }`.
-  The plist key is documented as an optional ProMotion/120Hz improvement only.
-- New `presentSharingan(animated: Boolean = true)` in iosMain: resolves the topmost
-  view controller (key window root → `presentedViewController` chain) and presents
-  the viewer modally. This promotes the sample app's private `presentSharingan()`
-  into library API.
+  (API verified by compile probe against CMP 1.11.1 on 2026-06-12.) The docs
+  describe the plist key accurately: *in CMP 1.11.1, omitting
+  `CADisableMinimumFrameDurationOnPhone` crashes the host app unless the strict
+  check is disabled; Sharingan disables it library-side, and adding the key
+  remains a valid host-side alternative (and enables ProMotion/120Hz).*
+- New `presentSharingan(animated: Boolean = true)` in iosMain: hops to the main
+  queue (`dispatch_async(dispatch_get_main_queue())`) so it is safe from any
+  thread, resolves the topmost view controller (key window via `isKeyWindow` —
+  not the deprecated `keyWindow` — root → `presentedViewController` chain,
+  skipping transient overlays like `UIAlertController`/`UIActivityViewController`),
+  and presents the viewer modally. This promotes the sample app's private
+  `presentSharingan()` into library API, hardened.
 - File-level `@ObjCName` so the Swift surface reads as a stable, intention-revealing
-  class name rather than `SharinganIosKt`. The exact generated names are pinned
-  during implementation by inspecting the produced framework header, and the
-  documented Swift snippets must match that header character-for-character.
+  class name rather than `SharinganIosKt`. This requires
+  `@file:OptIn(ExperimentalObjCName::class)` plus
+  `languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")` in both
+  modules' build scripts — an explicit API-surface decision; note the rationale in
+  the commit body. The exact generated names are pinned during implementation by
+  inspecting the produced framework header; documented Swift snippets are
+  placeholders until then and must end up matching that header
+  character-for-character.
 - `:sharingan-noop` mirrors both symbols with inert bodies (empty
   `UIViewController`, no-op present) so debug/noop swaps remain compile-identical.
 - **Testing:** topmost-VC resolution logic gets Given/When/Then unit tests in
-  `iosSimulatorArm64Test` (UIKit classes instantiate in simulator test runs).
-  The `configure` flag and `@ObjCName` are platform wiring (TDD-exempt); they are
-  verified by the end-to-end re-test instead.
+  `iosSimulatorArm64Test` (UIKit classes instantiate in simulator test runs
+  without a running UI — tests build an in-memory window/VC tree). Multi-window
+  iPad scene resolution is documented as manually-verified-only; XCTest in the
+  simulator provides no multi-scene host. The `configure` flag and `@ObjCName`
+  are platform wiring (TDD-exempt); they are verified by the end-to-end re-test
+  instead.
 
 ### 2. XCFramework distribution
 
 - Both modules gain the Kotlin Gradle `XCFramework` DSL: static frameworks,
-  `baseName = "Sharingan"` and `"SharinganNoop"`, targets iosArm64 +
-  iosSimulatorArm64. Build command: `./gradlew assembleSharinganXCFramework`
-  (and the noop counterpart).
-- The two frameworks expose an identical header surface, so pure-Swift consumers
-  switch debug/noop per build configuration with
-  `FRAMEWORK_SEARCH_PATHS[config=Release]` pointing at the noop output — no code
-  changes, and no silent-overwrite hazard on this path.
+  `baseName = "Sharingan"` (`:sharingan`) and `baseName = "SharinganNoop"`
+  (`:sharingan-noop`), targets iosArm64 + iosSimulatorArm64. The DSL registers
+  variant-suffixed tasks; the documented build commands are
+  `./gradlew :sharingan:assembleSharinganReleaseXCFramework` and
+  `./gradlew :sharingan-noop:assembleSharinganNoopReleaseXCFramework`.
+- The two frameworks must expose an identical header surface. This is asserted,
+  not assumed: §4 adds a programmatic header diff. Pure-Swift consumers then
+  switch debug/noop per build configuration. Search paths alone are
+  insufficient — the docs must cover the embed-and-sign side too: keep both
+  XCFrameworks in configuration-specific directories, set
+  `FRAMEWORK_SEARCH_PATHS` per configuration, **and** either use a
+  per-configuration Embed Frameworks phase or a single output directory whose
+  contents a build-phase script swaps, so the embedded binary matches the linked
+  one (a mismatch produces a dyld crash at launch).
 - Adding `binaries.framework`/XCFramework output is additive; Maven publishing of
-  the existing artifacts is unaffected.
+  the existing artifacts is unaffected. Docs warn against mixing integration
+  paths (Maven dependency in a KMP shared module *and* the XCFramework in the
+  same app) — pick one.
+- Known cosmetic issue to document: a debug framework is ~240 MB on disk
+  (Kotlin/Native runtime + Compose, not Sharingan code); release/noop links far
+  smaller and the size never ships to users at that magnitude.
 
 ### 3. Documentation overhaul (README, docs/RECIPES.md, site, AGENTS.md + llms.txt)
 
-- **KMP path (corrected):** consumer `shared` module uses `api(...)` and
-  `binaries.framework { export("dev.sharingan:sharingan:0.1.0") }` (noop variant
-  exported under the release toggle). Swift snippets show the real generated names.
+- **KMP path (corrected):** consumer `shared` module declares the dependency as
+  `api(...)` **in `iosMain.dependencies`** (export() resolves against the
+  corresponding source set's api configuration — `commonMain` placement is the
+  most likely silent-empty-header mistake) plus
+  `binaries.framework { export("dev.sharingan:sharingan:0.1.0") }` on each iOS
+  target (noop variant exported under the release toggle). Swift snippets show
+  the real generated names. The recipe is validated end-to-end by §4 before the
+  docs ship.
 - **New "iOS setup" walkthrough:** clone + `./gradlew publishToMavenLocal` +
   `mavenLocal()` repository (explicitly framed as the pre-Maven-Central path);
   Xcode `FRAMEWORK_SEARCH_PATHS`, `OTHER_LDFLAGS`, the Gradle build-phase script;
@@ -88,11 +120,16 @@ The iOS consumer journey fails in three independent ways:
   framework silently replaces the noop one.
 - **New "Pure Swift app" section:** build the XCFramework, drag into Xcode,
   embed & sign, per-configuration search-path swap for noop.
-- Version compatibility matrix (Sharingan 0.1.0 → Kotlin 2.4.0, Ktor 3.5+,
-  Compose Multiplatform 1.11+); note that HTTP-capture-only consumers need no
-  Compose dependencies in their own module; optional plist key note.
-- Ride-along: replace deprecated string-based Compose DSL accessors in the
-  library's own build scripts so consumers don't copy deprecation warnings.
+- Version compatibility matrix with exact tested pins — "Tested with Kotlin
+  2.4.0, Ktor 3.5.0, Compose Multiplatform 1.11.1; later versions may work but
+  are unverified (Kotlin/Native has no cross-compiler-version binary
+  compatibility guarantee)" — not open-ended `+` ranges. Note that
+  HTTP-capture-only consumers need no Compose dependencies in their own module;
+  plist key note per §1 wording.
+- Deprecated string-based Compose DSL accessors in the library's own build
+  scripts move to a separate chore commit with a before/after dependency-
+  resolution diff (not a ride-along), since the replacement can silently alter
+  resolved versions.
 
 ### 4. Verification (delegated, supervised)
 
@@ -103,8 +140,15 @@ deliverable lands, following only the updated docs:
    Success = zero undocumented steps.
 2. Visual pass on the booted iPhone 17 Pro simulator: the viewer must render
    (screenshots inspected by the supervising agent), with zero new `.ips`
-   termination reports for the app.
+   termination reports for the app. Includes a landscape rotation check
+   (no clipping / safe-area violations) and, where reachable, the event-detail
+   and share-sheet surfaces.
 3. Fresh pure-Swift app exercising the XCFramework path end to end.
+4. Header-parity gate: programmatically diff
+   `Sharingan.xcframework/ios-arm64/Sharingan.framework/Headers/` against the
+   `SharinganNoop` equivalent — identical apart from the framework name in
+   `module.modulemap`. The noop has never been linked as a standalone framework
+   before, so this gate is mandatory, not optional.
 
 ### 5. Commit plan (deliverable-shaped)
 
@@ -113,14 +157,23 @@ deliverable lands, following only the updated docs:
 2. **"Pure-Swift apps can embed Sharingan"** — XCFramework assembly for both
    artifacts.
 3. **"Docs-only onboarding reaches first captured event on iOS"** — documentation
-   overhaul across README/RECIPES/site/AGENTS.md/llms.txt + DSL deprecation
-   cleanup.
-4. Fixes arising from the field re-test, if any.
+   overhaul across README/RECIPES/site/AGENTS.md/llms.txt.
+4. Chore: Compose DSL deprecation cleanup in library build scripts (standalone,
+   with dependency-resolution before/after diff).
+5. Fixes arising from the field re-test, if any.
 
 ## Out of scope (recorded for roadmap)
 
 - SPM package / GitHub Releases hosting of the XCFramework.
 - Maven Central publishing.
 - Swift runtime bridge (events, isRecording, clear from Swift).
+- SwiftUI `.sharinganSheet()` modifier / `UIApplication` extension sugar
+  (suggested in field-test feedback; `presentSharingan()` covers the need for
+  this pass).
 - In-viewer navigation hooks for UI automation (the field test could not reach
   the detail screen programmatically; revisit alongside E2E tooling).
+- Android-side feedback items from the parallel Android field test (quickstart
+  template / `sharingan init`, notification-permission doc polish,
+  `dev.sharingan.show` import discoverability) — tracked for a follow-up pass;
+  the mavenLocal walkthrough and version matrix in §3 are written
+  platform-neutrally and resolve the overlapping Android doc gaps.
