@@ -109,3 +109,13 @@ presentSharingan(animated: Boolean = true)  // presents over topmost VC, any thr
 - Min targets: Android API 24, iOS arm64 + simulator arm64. Requires Ktor 3.x for the plugin.
 - KMP/iOS: dependency must be `api(...)` in `iosMain` (not just `commonMain`) and the framework block must `export(...)` it — without both, Kotlin/Native emits an empty header.
 - XCFramework build tasks: `./gradlew :sharingan:assembleSharinganReleaseXCFramework` (debug tool) and `./gradlew :sharingan-noop:assembleSharinganReleaseXCFramework` (inert twin); outputs at `<module>/build/XCFrameworks/release/Sharingan.xcframework`.
+
+## Public API stability (BCV)
+
+The public API of both `:sharingan` and `:sharingan-noop` is guarded by Kotlin's
+binary-compatibility-validator. The golden dumps are committed at
+`<module>/api/<module>.api` (Android/JVM) and `<module>/api/<module>.klib.api`
+(iOS ABI) and cover the full surface, including the iOS-only entry points.
+
+- `./gradlew apiCheck` — fails if the public API drifts from the committed dumps. Runs on every PR (`.github/workflows/api-check.yml`, macOS so the iOS klib targets build).
+- `./gradlew apiDump` — regenerate the dumps after an *intentional* API change, then commit the updated `api/*.api` files in the same PR.
