@@ -131,6 +131,12 @@ configuration and your build settings decide which one links:
    in the built `.app` matches the configuration.
 3. `import Sharingan`, then `SharinganViewControllerKt.presentSharingan(animated: true)`.
 
+A pure-Swift app has no Ktor plugin, so capture your `URLSession` traffic
+manually — call `Sharingan.http.log(...)` from your networking layer (see
+[Quick start → HTTP](#http--automatic-ktor) for the manual-logging note and
+[AGENTS.md](AGENTS.md) for the full parameter list). Without it the viewer
+opens but stays empty.
+
 Don't mix this with the Maven/KMP path in one app — pick one.
 
 ## Quick start
