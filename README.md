@@ -6,6 +6,8 @@ Sharingan is an on-device debug logger. It captures protocol traffic while you u
 
 > The name is a Naruto reference: the eye that sees everything.
 
+**Android**
+
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/home-dark.png" width="260" alt="Sharingan home — HTTP tab, dark mode, with 401 and 500 failure rails"/></td>
@@ -21,6 +23,31 @@ Sharingan is an on-device debug logger. It captures protocol traffic while you u
     <td align="center"><img src="docs/screenshots/mqtt-dark.png" width="260" alt="MQTT tab — publish, receive and subscribe rows with QoS badges and failure rails"/></td>
     <td align="center"><img src="docs/screenshots/ble-dark.png" width="260" alt="Bluetooth tab — GATT connect, discover, read, notify and error operations"/></td>
     <td align="center"><img src="docs/screenshots/home-light.png" width="260" alt="Sharingan home — HTTP tab in light mode"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>MQTT tab — pub/recv/sub with QoS</sub></td>
+    <td align="center"><sub>Bluetooth tab — GATT operations</sub></td>
+    <td align="center"><sub>Light mode follows the system theme</sub></td>
+  </tr>
+</table>
+
+**iOS** — the same browser, presented from Swift via `SharinganViewControllerKt.presentSharingan(animated:)`:
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/ios/ios-home-dark.png" width="260" alt="Sharingan on iOS — HTTP tab, dark mode, with 401 and 500 failure rails"/></td>
+    <td align="center"><img src="docs/screenshots/ios/ios-detail-error.png" width="260" alt="iOS detail screen of a 500 error — summary cards, timing waterfall, headers, syntax-colored JSON body"/></td>
+    <td align="center"><img src="docs/screenshots/ios/ios-share-sheet.png" width="260" alt="iOS share sheet with Copy for AI agent as the primary action"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>HTTP tab — live list with failure rails</sub></td>
+    <td align="center"><sub>Event detail — timing, headers, JSON</sub></td>
+    <td align="center"><sub>Share sheet — "Copy for AI agent" first</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/ios/ios-mqtt-dark.png" width="260" alt="iOS MQTT tab — publish, receive and subscribe rows with QoS badges and a failed broker status"/></td>
+    <td align="center"><img src="docs/screenshots/ios/ios-ble-dark.png" width="260" alt="iOS Bluetooth tab — GATT connect, discover, read, notify and error operations"/></td>
+    <td align="center"><img src="docs/screenshots/ios/ios-home-light.png" width="260" alt="Sharingan on iOS — HTTP tab in light mode"/></td>
   </tr>
   <tr>
     <td align="center"><sub>MQTT tab — pub/recv/sub with QoS</sub></td>
