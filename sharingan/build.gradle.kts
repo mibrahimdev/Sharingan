@@ -7,10 +7,13 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    `maven-publish`
+    alias(libs.plugins.mavenPublish)
 }
 
-group = "dev.sharingan"
+// Maven coordinate only — Kotlin packages and the Android namespace stay
+// `dev.sharingan`. Central auto-verifies `io.github.mibrahimdev` against the
+// GitHub repo, so no domain ownership is required (design decision 1/1a).
+group = "io.github.mibrahimdev"
 version = libs.versions.sharingan.get()
 
 kotlin {
@@ -92,4 +95,41 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+    // signAllPublications() is the default for real publishes (local + CI). The
+    // `-PlocalPublishNoSign` flag disables it for offline POM verification where
+    // no GPG key is available (real signing is provisioned in a separate issue).
+    if (!providers.gradleProperty("localPublishNoSign").isPresent) {
+        signAllPublications()
+    }
+    coordinates(group.toString(), "sharingan", version.toString())
+
+    pom {
+        name.set("Sharingan")
+        description.set(
+            "On-device debug logger and HTTP/MQTT/BLE inspector for Android & Kotlin Multiplatform."
+        )
+        url.set("https://mibrahimdev.github.io/Sharingan/")
+        licenses {
+            license {
+                name.set("Apache-2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+        developers {
+            developer {
+                id.set("mibrahimdev")
+                name.set("Mohamed Ibrahim")
+                email.set("mibrahim.dev@gmail.com")
+            }
+        }
+        scm {
+            connection.set("scm:git:https://github.com/mibrahimdev/Sharingan.git")
+            developerConnection.set("scm:git:ssh://git@github.com/mibrahimdev/Sharingan.git")
+            url.set("https://github.com/mibrahimdev/Sharingan")
+        }
+    }
 }

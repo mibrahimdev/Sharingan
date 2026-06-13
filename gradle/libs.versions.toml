@@ -4,6 +4,7 @@ sharingan = "0.1.0"
 kotlin = "2.4.0"
 agp = "8.13.2"
 composeMultiplatform = "1.11.1"
+vanniktechMavenPublish = "0.36.0"
 ktor = "3.5.0"
 kotlinx-coroutines = "1.11.0"
 
@@ -35,3 +36,4 @@ androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
