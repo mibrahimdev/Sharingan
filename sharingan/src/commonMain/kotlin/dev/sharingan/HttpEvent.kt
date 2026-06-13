@@ -1,9 +1,22 @@
 package dev.sharingan
 
 /**
- * One phase of an HTTP request's timing waterfall (e.g. `DNS`, `Connect`,
- * `TLS`, `TTFB`, `Download`). Rendered as a proportional bar in the detail
- * screen.
+ * One phase of an HTTP request's timing waterfall, rendered as a proportional
+ * bar in the detail screen.
+ *
+ * [label] is a free-form [String], so any text renders — but stick to the
+ * conventional waterfall vocabulary so phases read consistently across events
+ * and exports. Listed in the order they occur:
+ *
+ * - `DNS` — hostname resolution.
+ * - `Connect` — TCP connection establishment.
+ * - `TLS` — TLS/SSL handshake.
+ * - `TTFB` — time to first byte (request sent → first response byte).
+ * - `Download` — response body transfer.
+ *
+ * The `SharinganKtor` plugin emits the `TTFB`/`Download` split automatically;
+ * supply the earlier phases yourself via `Sharingan.http.log(...)` when your
+ * HTTP stack exposes them.
  */
 public data class TimingPhase(
     public val label: String,
