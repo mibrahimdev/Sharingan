@@ -97,6 +97,9 @@ git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
 ./gradlew publishToMavenLocal
 ```
 
+Maintainers: cutting a Maven Central release is a two-step,
+stage-then-manually-release flow — see [`docs/RELEASING.md`](docs/RELEASING.md).
+
 ### Android app (two lines)
 
 ```kotlin

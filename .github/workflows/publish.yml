@@ -1,16 +1,38 @@
 name: Publish to Maven Central
 
-# Subsequent releases are a single tag push: pushing v<version> uploads and
-# releases both :sharingan and :sharingan-noop to Maven Central in one step,
-# then cuts the GitHub Release. The tag must equal the project version
-# (gradle/libs.versions.toml -> sharingan) or the job fails before publishing.
+# Releases are two steps by deliberate design (see decision note below):
+#
+#   1. Push tag v<version>  ->  this workflow STAGES both :sharingan and
+#      :sharingan-noop to the Maven Central Portal and STOPS. Nothing is public
+#      yet; the deployment sits in the portal's "Deployments" list awaiting a
+#      human.
+#   2. A maintainer verifies the staged deployment in the Central Portal UI and
+#      clicks "Publish" to release it, then cuts the matching GitHub Release.
+#      See docs/RELEASING.md for the exact portal checklist.
+#
+# DECISION (ADR docs/adr/0001-stage-then-manual-release.md): we run
+# `publishToMavenCentral` (stage-only), NOT `publishAndReleaseToMavenCentral`
+# (upload-and-auto-release). Central releases are PERMANENT and can never be
+# unpublished, so the project chose a human gate at the portal over an
+# automated end-to-end release. The cost is one manual click per release; the
+# benefit is that a bad artifact can be dropped from staging instead of living
+# on Central forever.
+#
+# The tag must equal the project version (gradle/libs.versions.toml ->
+# sharingan) or the job fails before publishing.
 on:
   push:
     tags:
       - "v*"
+  # Manual trigger so a maintainer can exercise the staged flow (and confirm it
+  # reaches the portal without releasing) without having to cut a real tag.
+  # NOTE: a workflow_dispatch run does NOT have a tag, so the version-tag
+  # assertion is skipped for dispatch runs (see the step's `if:`). Use this only
+  # for dry-runs / re-staging an already-tagged version.
+  workflow_dispatch:
 
 permissions:
-  contents: write # create the GitHub Release for the tag
+  contents: read
 
 jobs:
   publish:
@@ -26,7 +48,9 @@ jobs:
 
       # Fail loudly if the pushed tag does not match the catalog version, so we
       # never publish mislabeled artifacts. Reads $GITHUB_REF_NAME (the tag).
+      # Skipped on manual workflow_dispatch runs, which have no tag.
       - name: Assert tag matches project version
+        if: github.event_name == 'push'
         run: ./scripts/check-version-tag.sh
 
       # The signing key secret is base64-encoded (a single clean line in the
@@ -42,15 +66,24 @@ jobs:
             echo "__SHARINGAN_GPG_EOF__"
           } >> "$GITHUB_ENV"
 
-      - name: Publish and release to Maven Central
+      # STAGE ONLY. `publishToMavenCentral` uploads both modules to a new Central
+      # Portal deployment and stops. It does NOT release. A human must verify and
+      # click "Publish" in the portal afterwards (docs/RELEASING.md). This is the
+      # single line that enforces the human-gated release policy -- do not switch
+      # it back to `publishAndReleaseToMavenCentral`.
+      - name: Stage to Maven Central (no auto-release)
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
           # ORG_GRADLE_PROJECT_signingInMemoryKey is set in the decode step above.
-        run: ./gradlew publishAndReleaseToMavenCentral
+        run: ./gradlew publishToMavenCentral
 
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+      - name: Staged - next steps
+        run: |
+          echo "::notice title=Staged to Central Portal::Artifacts uploaded to a NEW deployment on the Central Portal and are NOT yet public."
+          echo "Next: a maintainer must verify and release manually. See docs/RELEASING.md."
+          echo "  1. Open https://central.sonatype.com/publishing/deployments"
+          echo "  2. Confirm io.github.mibrahimdev:sharingan and io.github.mibrahimdev:sharingan-noop are present, validated, and signed."
+          echo "  3. Click Publish on the deployment to release it to Central."
+          echo "  4. Cut the matching GitHub Release for this tag."
