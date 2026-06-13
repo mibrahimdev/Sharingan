@@ -147,11 +147,11 @@
   <div class="codeblock noop-block">
     <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>build.gradle.kts — the whole integration<button class="cb-copy" data-copy="gradle">copy</button></div>
     <pre id="copy-gradle"><code>dependencies {
-    debugImplementation(<span class="s">"dev.sharingan:sharingan:0.1.0"</span>)
-    releaseImplementation(<span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span>)
+    debugImplementation(<span class="s">"io.github.mibrahimdev:sharingan:0.1.0"</span>)
+    releaseImplementation(<span class="s">"io.github.mibrahimdev:sharingan-noop:0.1.0"</span>)
 }</code></pre>
   </div>
-  <p class="noop-note">Not yet on Maven Central — see <a href="docs/getting-started.html#install">Getting started → Get the artifacts (publishToMavenLocal)</a>. Zero init code on Android — capture starts via a manifest-merged
+  <p class="noop-note">On <a href="https://central.sonatype.com/artifact/io.github.mibrahimdev/sharingan">Maven Central</a> — add <code>mavenCentral()</code> and you're set (<a href="docs/getting-started.html#install">Getting started → Get the artifacts</a>). Zero init code on Android — capture starts via a manifest-merged
   <code>ContentProvider</code>. KMP/iOS setup is <a href="docs/getting-started.html">one Gradle property</a>.</p>
 </section>
 

@@ -44,27 +44,38 @@ Requirements: Android API 24+, iOS arm64 + simulator arm64, Ktor 3.x for the HTT
 
 ### Get the artifacts
 
-Sharingan is not yet on Maven Central. Until it is, publish locally:
+Sharingan is on [Maven Central](https://central.sonatype.com/artifact/io.github.mibrahimdev/sharingan).
+Add `mavenCentral()` to your repositories (`settings.gradle.kts` →
+`dependencyResolutionManagement { repositories { mavenCentral(); ... } }`),
+then depend on the coordinate for your build type:
 
-```bash
-git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
-./gradlew publishToMavenLocal
-```
-
-and add `mavenLocal()` to your repositories (`settings.gradle.kts` →
-`dependencyResolutionManagement { repositories { mavenLocal(); ... } }`).
+| Coordinate | Use |
+|---|---|
+| `io.github.mibrahimdev:sharingan:0.1.0` | debug builds (capture + UI) |
+| `io.github.mibrahimdev:sharingan-noop:0.1.0` | release builds (same API, inert, no UI) |
 
 **Tested versions:** Sharingan 0.1.0 → Kotlin **2.4.0**, Ktor **3.5.0**,
 Compose Multiplatform **1.11.1**, AGP 8.13.2. Later versions may work but are
 unverified — Kotlin/Native has no cross-compiler-version binary
 compatibility guarantee, so match the Kotlin version exactly.
 
+#### Building from source / contributing
+
+To build against local changes, publish to your Maven local repo and add
+`mavenLocal()` to your repositories (`settings.gradle.kts` →
+`dependencyResolutionManagement { repositories { mavenLocal(); ... } }`):
+
+```bash
+git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
+./gradlew publishToMavenLocal
+```
+
 ### Android app (two lines)
 
 ```kotlin
 dependencies {
-    debugImplementation("dev.sharingan:sharingan:0.1.0")
-    releaseImplementation("dev.sharingan:sharingan-noop:0.1.0")
+    debugImplementation("io.github.mibrahimdev:sharingan:0.1.0")
+    releaseImplementation("io.github.mibrahimdev:sharingan-noop:0.1.0")
 }
 ```
 
@@ -82,7 +93,7 @@ won't see Sharingan at all.
 // shared/build.gradle.kts
 kotlin {
     val sharinganArtifact = if (providers.gradleProperty("release").isPresent)
-        "dev.sharingan:sharingan-noop:0.1.0" else "dev.sharingan:sharingan:0.1.0"
+        "io.github.mibrahimdev:sharingan-noop:0.1.0" else "io.github.mibrahimdev:sharingan:0.1.0"
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {

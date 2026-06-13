@@ -58,26 +58,35 @@
     nothing to call.</p>
 
     <h2 id="install">Get the artifacts</h2>
-    <p>Sharingan is not yet on Maven Central. Until it is, publish locally:</p>
-    <div class="codeblock">
-      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>terminal<button class="cb-copy" data-copy="clone">copy</button></div>
-      <pre id="copy-clone"><code>git clone https://github.com/mibrahimdev/Sharingan &amp;&amp; cd Sharingan
-./gradlew publishToMavenLocal</code></pre>
-    </div>
-    <p>Then add <code>mavenLocal()</code> to your repositories
+    <p>Sharingan is on <a href="https://central.sonatype.com/artifact/io.github.mibrahimdev/sharingan">Maven
+    Central</a>. Add <code>mavenCentral()</code> to your repositories
     (<code>settings.gradle.kts</code> →
-    <code>dependencyResolutionManagement { repositories { mavenLocal(); … } }</code>).</p>
+    <code>dependencyResolutionManagement { repositories { mavenCentral(); … } }</code>), then
+    depend on the coordinate for your build type:
+    <code>io.github.mibrahimdev:sharingan:0.1.0</code> for debug (capture + UI) and
+    <code>io.github.mibrahimdev:sharingan-noop:0.1.0</code> for release (same API, inert,
+    no UI).</p>
     <div class="callout"><b>Tested versions:</b> Sharingan 0.1.0 → Kotlin <b>2.4.0</b>,
     Ktor <b>3.5.0</b>, Compose Multiplatform <b>1.11.1</b>, AGP 8.13.2. Later versions may
     work but are unverified — Kotlin/Native has no cross-compiler-version binary
     compatibility guarantee, so match the Kotlin version exactly.</div>
 
+    <h3 id="install-source">Building from source / contributing</h3>
+    <p>To build against local changes, publish to your Maven local repo and add
+    <code>mavenLocal()</code> to your repositories
+    (<code>dependencyResolutionManagement { repositories { mavenLocal(); … } }</code>):</p>
+    <div class="codeblock">
+      <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>terminal<button class="cb-copy" data-copy="clone">copy</button></div>
+      <pre id="copy-clone"><code>git clone https://github.com/mibrahimdev/Sharingan &amp;&amp; cd Sharingan
+./gradlew publishToMavenLocal</code></pre>
+    </div>
+
     <h2 id="install-android">Install — Android app</h2>
     <div class="codeblock">
       <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>app/build.gradle.kts<button class="cb-copy" data-copy="install">copy</button></div>
       <pre id="copy-install"><code>dependencies {
-    debugImplementation(<span class="s">"dev.sharingan:sharingan:0.1.0"</span>)
-    releaseImplementation(<span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span>)
+    debugImplementation(<span class="s">"io.github.mibrahimdev:sharingan:0.1.0"</span>)
+    releaseImplementation(<span class="s">"io.github.mibrahimdev:sharingan-noop:0.1.0"</span>)
 }</code></pre>
     </div>
     <p>That is the whole build-type story: debug builds get capture + the log browser,
@@ -95,7 +104,7 @@
       <div class="cb-head"><div class="dots"><i></i><i></i><i></i></div>shared/build.gradle.kts<button class="cb-copy" data-copy="kmp">copy</button></div>
       <pre id="copy-kmp"><code>kotlin {
     <span class="k">val</span> sharinganArtifact = <span class="k">if</span> (providers.gradleProperty(<span class="s">"release"</span>).isPresent)
-        <span class="s">"dev.sharingan:sharingan-noop:0.1.0"</span> <span class="k">else</span> <span class="s">"dev.sharingan:sharingan:0.1.0"</span>
+        <span class="s">"io.github.mibrahimdev:sharingan-noop:0.1.0"</span> <span class="k">else</span> <span class="s">"io.github.mibrahimdev:sharingan:0.1.0"</span>
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target -&gt;
         target.binaries.framework {
