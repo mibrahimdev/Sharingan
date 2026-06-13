@@ -35,7 +35,7 @@ kotlin {
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
             baseName = "Sharingan"
-            isStatic = true
+            isStatic = false
             sharinganXCFramework.add(this)
         }
     }
