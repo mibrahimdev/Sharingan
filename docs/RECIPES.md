@@ -59,6 +59,34 @@ struct SharinganView: UIViewControllerRepresentable {
 .sheet(isPresented: $showLogs) { SharinganView() }
 ```
 
+## iOS — manual HTTP logging from Swift (URLSession, no Ktor)
+
+A pure-Swift app (or any non-Ktor stack) feeds the viewer by calling
+`Sharingan.http.log(...)` itself. One Swift gotcha: Kotlin default arguments
+do **not** bridge to Swift, so every parameter is required — pass `[]` for the
+arrays you don't have and `nil` for optional values. The numeric params are
+boxed Kotlin types (`SharinganInt?`, `SharinganLong?`) that accept integer
+literals; headers are `SharinganKotlinPair<NSString, NSString>`.
+
+```swift
+import shared
+
+Sharingan.shared.http.log(
+    method: "GET",
+    url: "https://api.example.com/users",
+    statusCode: 200,                 // SharinganInt?  — literal is fine
+    durationMillis: 142,             // SharinganLong? — literal is fine
+    requestHeaders: [],              // [SharinganKotlinPair<NSString, NSString>]
+    responseHeaders: [],
+    requestBody: nil,
+    responseBody: nil,
+    contentType: "application/json",
+    responseSizeBytes: 5645,
+    timing: [],                      // [SharinganTimingPhase] — not optional
+    error: nil
+)
+```
+
 ## iOS — Live Activity analog (optional, app-side)
 
 iOS does not allow a library to ship a sticky notification. If you want the
