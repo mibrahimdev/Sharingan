@@ -168,16 +168,10 @@ deliverable lands, following only the updated docs:
 
 ## Out of scope (recorded for roadmap)
 
-- SPM package / GitHub Releases hosting of the XCFramework.
-- Maven Central publishing.
-- Swift runtime bridge (events, isRecording, clear from Swift).
-- SwiftUI `.sharinganSheet()` modifier / `UIApplication` extension sugar
-  (suggested in field-test feedback; `presentSharingan()` covers the need for
-  this pass).
-- In-viewer navigation hooks for UI automation (the field test could not reach
-  the detail screen programmatically; revisit alongside E2E tooling).
-- Android-side feedback items from the parallel Android field test (quickstart
-  template / `sharingan init`, notification-permission doc polish,
-  `dev.sharingan.show` import discoverability) — tracked for a follow-up pass;
-  the mavenLocal walkthrough and version matrix in §3 are written
-  platform-neutrally and resolve the overlapping Android doc gaps.
+Consolidated into [docs/ROADMAP.md](../../ROADMAP.md). Items deferred from this
+pass: SPM / GitHub Releases hosting, Maven Central publishing, the Swift runtime
+bridge (events, isRecording, clear), the SwiftUI `.sharinganSheet()` modifier,
+in-viewer navigation hooks for UI automation, the Android quickstart template /
+`sharingan init`, and the iOS-friendly Swift `log()` overload. The mavenLocal
+walkthrough and version matrix in §3 are written platform-neutrally and resolve
+the overlapping Android doc gaps.

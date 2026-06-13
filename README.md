@@ -292,6 +292,7 @@ The buffer is an in-memory ring (default 300 events, `SharinganStore(capacity)` 
 | [AGENTS.md](AGENTS.md) (mirrored at [llms.txt](llms.txt)) | Terse, complete API reference designed for machine consumption — point your AI agent here |
 | [docs/RECIPES.md](docs/RECIPES.md) | Integration recipes: MQTT clients, Kable, SwiftUI wrapper, Live Activity analog, shake-to-open |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the library is built: module layout, capture pipeline, UI structure |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Future enhancements, recorded but not scheduled |
 
 ## License
 
