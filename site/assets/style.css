@@ -24,6 +24,24 @@
   --maxw: 1080px;
 }
 
+/* warm-paper light theme — cohesive with the terminal-noir dark default */
+:root[data-theme="light"] {
+  --bg: #f5f1ea;
+  --bg-raised: #fffdf8;
+  --bg-panel: #efe8dd;
+  --line: #dbd3c5;
+  --line-soft: #e7e0d3;
+  --ink: #1c1815;
+  --ink-dim: #5b544b;
+  --ink-faint: #8c8377;
+  --crimson: #d12e2e;
+  --crimson-bright: #be1f1f;
+  --crimson-dim: #e3aaaa;
+  --ok: #1a8f57;
+  --warn: #9a6712;
+  --info: #2c66b3;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -36,6 +54,7 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* grain overlay */
@@ -48,6 +67,8 @@ body::before {
   opacity: 0.5;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* the dark grain is too heavy on paper — lighten it */
+:root[data-theme="light"] body::before { opacity: 0.22; }
 
 ::selection { background: var(--crimson-dim); color: var(--ink); }
 
@@ -99,6 +120,33 @@ a { color: inherit; text-decoration: none; }
   transition: border-color 0.15s, color 0.15s;
 }
 .nav-gh:hover { border-color: var(--crimson); color: var(--crimson-bright); }
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--crimson-bright); border-color: var(--crimson); }
+.theme-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.theme-toggle .ic-moon { display: none; }
+:root[data-theme="light"] .theme-toggle .ic-sun { display: none; }
+:root[data-theme="light"] .theme-toggle .ic-moon { display: inline; }
 
 /* ── shared bits ─────────────────────────────────────────── */
 .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
