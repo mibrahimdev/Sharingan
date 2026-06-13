@@ -6,8 +6,8 @@ On-device debug logger for Kotlin Multiplatform (Android + iOS). Captures HTTP, 
 
 | Coordinate | Use |
 |---|---|
-| `dev.sharingan:sharingan:0.1.0` | debug builds (capture + UI) |
-| `dev.sharingan:sharingan-noop:0.1.0` | release builds (same API, inert, no UI) |
+| `io.github.mibrahimdev:sharingan:0.1.0` | debug builds (capture + UI) |
+| `io.github.mibrahimdev:sharingan-noop:0.1.0` | release builds (same API, inert, no UI) |
 
 Android: `debugImplementation` / `releaseImplementation` pair.
 KMP commonMain: choose one via a Gradle property (single dependency list).
