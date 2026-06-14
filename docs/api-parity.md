@@ -52,6 +52,22 @@ In CI it runs as the `api-parity` job in
 [`.github/workflows/api-check.yml`](../.github/workflows/api-check.yml), on a cheap
 `ubuntu` runner (it needs no macOS host).
 
+### `checkApiParity` complements `apiCheck` — keep both
+
+`checkApiParity` compares the two committed dumps against **each other**; it trusts
+they are current. It does **not** verify that a dump still matches its module's real
+source — that is [`apiCheck`](https://github.com/Kotlin/binary-compatibility-validator)'s
+job (the separate `api-check` job, wired in #11). The two gates are complementary,
+not redundant:
+
+- `apiCheck` catches a **stale dump** — you changed the public API but forgot
+  `./gradlew apiDump`, so the committed dump no longer matches the source.
+- `checkApiParity` catches the **two modules drifting apart** — both dumps are
+  current, but `:sharingan` and `:sharingan-noop` no longer agree.
+
+A green parity check over stale dumps proves nothing, so always keep both gates
+running.
+
 ## Why it is NOT a whole-file diff
 
 A naïve `diff` of the committed dumps would fail constantly, because `:sharingan`
