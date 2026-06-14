@@ -1,0 +1,92 @@
+name: Build & Test
+
+# PR-time build/test gate (issue #22). Every pull request and every push to main
+# must build all KMP targets and run the JVM + iOS unit tests before it can merge.
+# This complements the other workflows, which guard different things:
+#   - api-check.yml  -> public-API surface stability (apiCheck)
+#   - publish.yml    -> tag-triggered Maven Central release
+# Neither builds the code or runs tests on a PR, so this workflow is the actual
+# correctness gate. A PR that introduces a failing unit test is blocked here:
+#   - a broken common/JVM test fails the `jvm` job's testDebugUnitTest step;
+#   - a broken iOS test fails the `ios` job's iosSimulatorArm64Test step.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref (e.g. a force-push to a PR branch) so we
+# don't burn runner minutes — especially the macOS minutes the iOS job consumes.
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # JVM/common unit tests. Runs on ubuntu (cheap, fast feedback): the
+  # Android-hosted debug unit-test task compiles the Android + commonMain/
+  # commonTest sources and runs them on the JVM, so a shared-logic regression
+  # fails here within minutes without waiting on a macOS runner. iOS/Kotlin-
+  # Native tasks are deliberately NOT invoked here — Kotlin/Native iOS targets
+  # only link on macOS, so `assemble` (which pulls in the iOS framework link
+  # tasks) is run in the macOS job below, not here.
+  jvm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # commonTest is executed by the Android debug unit-test task. A failing
+      # test here blocks the PR.
+      - name: Run JVM/common unit tests
+        run: ./gradlew :sharingan:testDebugUnitTest :sharingan-noop:testDebugUnitTest
+
+  # Full multiplatform build + iOS simulator unit tests on macOS — the only
+  # host that can link the Kotlin/Native iOS frameworks. This job (a) runs
+  # `assemble`, the cross-target build gate that compiles EVERY target (Android
+  # AARs and the iOS arm64/simulator frameworks), and (b) runs the Kotlin/Native
+  # unit tests on the iOS simulator. It runs on EVERY PR (not deferred): the
+  # library ships an iOS target, so an iOS-only regression must not reach a
+  # release unnoticed. The `concurrency` block above caps wasted macOS minutes.
+  ios:
+    # macos-26 (Tahoe) ships Xcode 26 / the iOS 26 SDK. The default macos-latest
+    # image (Xcode 16.x, iOS 18 SDK) CANNOT link this project's frameworks: the
+    # Compose-UIKit runtime references iOS 26 symbols (e.g. UIViewLayoutRegion in
+    # the UIUtilities framework), so `linkDebugFrameworkIos*` fails with
+    # "Undefined symbols for architecture arm64" on an older SDK. api-check.yml
+    # only *compiles* klibs (never links a framework), which is why it still
+    # passes on macos-latest.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Build every target on the canonical host (the only one that links the
+      # iOS frameworks). A target that no longer compiles fails the PR here.
+      - name: Assemble all targets
+        run: ./gradlew assemble
+
+      # Executes Kotlin/Native unit tests on the iOS simulator. :sharingan pins
+      # deviceId "iPhone 17 Pro" (sharingan/build.gradle.kts), which exists in
+      # the macos-26 iOS 26 runtime; :sharingan-noop pins none and uses the KGP
+      # default. If a runtime lacks the device the step fails fast (no silent
+      # skip) — a deviceId follow-up, not a hidden gap.
+      - name: Run iOS simulator unit tests
+        run: ./gradlew :sharingan:iosSimulatorArm64Test :sharingan-noop:iosSimulatorArm64Test
