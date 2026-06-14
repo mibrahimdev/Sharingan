@@ -191,11 +191,13 @@ The plugin records method, URL, status, headers, textual bodies (capped at 64 KB
 
 ```kotlin
 install(SharinganKtor) {
-    captureBodies = true            // default
+    captureBodies = true            // default — request/response bodies are recorded
     maxBodyBytes = 64 * 1024        // default
     redactedHeaders = setOf("Authorization", "X-Api-Key")
 }
 ```
+
+**Body capture is ON by default.** To capture only metadata (method, URL, status, headers, timing) and never store body text, set `captureBodies = false`. To **start paused** and capture nothing at all until you flip it on — e.g. so a QA build records only the flow you ask for — call `Sharingan.setRecording(false)` at startup, then `Sharingan.setRecording(true)` (or tap Pause/Resume on the Android capture notification) when you're ready. Pausing applies to every protocol, not just HTTP.
 
 Using OkHttp/NSURLSession directly? Log manually with `Sharingan.http.log(...)`.
 
@@ -246,7 +248,7 @@ More adapters (KMQTT/HiveMQ/Paho callbacks, full Kable wiring, shake-to-open) li
 
 The capture notification shows per-protocol counters, a three-event ticker when expanded, and a Pause/Resume action. It is silent and updated in place. Two things to know:
 
-- **Android 13+:** the notification needs the `POST_NOTIFICATIONS` runtime permission — Sharingan declares it, your app requests it. Without the grant, capture still works; open the browser with `Sharingan.show(context)`.
+- **Android 13+:** the notification needs the `POST_NOTIFICATIONS` runtime permission. Sharingan's `AndroidManifest.xml` declares `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />`, so manifest merger surfaces it in **your app's merged manifest** (visible in *Merged Manifest* in Android Studio and in the APK). The library **never requests it at runtime** — there is no `requestPermissions` call anywhere in Sharingan, so it can't trigger a permission prompt or change your app's runtime behavior; your app decides whether to ask the user. Without the grant, capture still works silently; open the browser with `Sharingan.show(context)`. Since the debug logger ships only in debug/QA builds, the permission does not reach your release manifest (the `sharingan-noop` release artifact declares nothing).
 - **Do Not Disturb:** because the notification is silent, DND hides it on most devices — `Sharingan.show(context)` always works (wire it to a debug-drawer button or shake gesture).
 
 ### iOS
