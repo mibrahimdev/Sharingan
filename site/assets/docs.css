@@ -142,4 +142,10 @@ table.api td:first-child { white-space: nowrap; }
   .docs-grid { grid-template-columns: 1fr; gap: 0; }
   .docs-side { position: static; padding-bottom: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; border-bottom: 1px solid var(--line-soft); }
   .docs-side .side-group { margin-bottom: 14px; }
+  /* API tables: let the first column wrap and long tokens break so the
+     second column isn't pushed off-screen and trimmed by overflow-x: hidden. */
+  table.api td:first-child { white-space: normal; }
+  .docs-main p code, .docs-main li code, .docs-main td code, .callout code {
+    overflow-wrap: anywhere;
+  }
 }

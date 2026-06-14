@@ -273,8 +273,16 @@
 
 @media (max-width: 880px) {
   .hero { padding: 64px 0 70px; }
-  .hero-grid { grid-template-columns: 1fr; gap: 44px; }
-  .capture { transform: none; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 44px; }
+  /* Let the capture panel shrink below its nowrap min-content instead of
+     inflating the grid track (which stretched — and clipped — the hero text). */
+  .capture { transform: none; min-width: 0; }
   .proto-grid, .qs-steps { grid-template-columns: 1fr; }
   .agent-grid { grid-template-columns: 1fr; }
+  /* Same fix for the protocol cards: the nowrap .proto-snippet was inflating
+     the card's min-content and pushing card text off-screen. Let the card
+     shrink so the snippet scrolls inside it (it already has overflow-x: auto). */
+  .proto-card { min-width: 0; }
+  /* Break long inline identifiers/paths so they wrap instead of overflowing. */
+  .qs-step code, .agent-points code, .noop-note code { overflow-wrap: anywhere; }
 }
