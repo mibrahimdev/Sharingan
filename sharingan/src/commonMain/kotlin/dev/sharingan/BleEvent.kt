@@ -17,7 +17,8 @@ public enum class BleOperation {
  * [payload] carries the decoded value as text — JSON is rendered with syntax
  * colors in the detail screen, anything else is shown verbatim.
  */
-public data class BleEvent(
+@ConsistentCopyVisibility
+public data class BleEvent internal constructor(
     override val id: String,
     override val timestampMillis: Long,
     public val operation: BleOperation,

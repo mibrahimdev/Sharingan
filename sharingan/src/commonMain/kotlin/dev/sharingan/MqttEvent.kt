@@ -18,7 +18,8 @@ public enum class MqttDirection {
  * For [MqttDirection.SUBSCRIBE] events, [topic] holds the topic *filter*
  * (it may contain `+`/`#` wildcards) and [payload] is `null`.
  */
-public data class MqttEvent(
+@ConsistentCopyVisibility
+public data class MqttEvent internal constructor(
     override val id: String,
     override val timestampMillis: Long,
     public val direction: MqttDirection,
