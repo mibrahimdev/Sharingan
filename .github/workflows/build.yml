@@ -9,10 +9,25 @@ name: Build & Test
 # correctness gate. A PR that introduces a failing unit test is blocked here:
 #   - a broken common/JVM test fails the `jvm` job's testDebugUnitTest step;
 #   - a broken iOS test fails the `ios` job's iosSimulatorArm64Test step.
+# Docs/site-only changes skip this gate (paths-ignore): they can't affect the
+# Kotlin/Gradle build or tests, so there's no point spending ~25 min of macOS
+# runner time linking the iOS frameworks for a README or CSS edit. Any PR that
+# also touches code/build files still runs the full gate. (The site has its own
+# pages.yml deploy; docs are plain markdown.)
 on:
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
 
 permissions:
   contents: read
