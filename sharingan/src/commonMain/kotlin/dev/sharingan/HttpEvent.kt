@@ -30,7 +30,8 @@ public data class TimingPhase(
  * rows read like an access log. A `null` [statusCode] together with a non-null
  * [error] means the request failed at the transport layer.
  */
-public data class HttpEvent(
+@ConsistentCopyVisibility
+public data class HttpEvent internal constructor(
     override val id: String,
     override val timestampMillis: Long,
     public val method: String,
