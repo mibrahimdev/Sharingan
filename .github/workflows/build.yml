@@ -58,7 +58,14 @@ jobs:
   # library ships an iOS target, so an iOS-only regression must not reach a
   # release unnoticed. The `concurrency` block above caps wasted macOS minutes.
   ios:
-    runs-on: macos-latest
+    # macos-26 (Tahoe) ships Xcode 26 / the iOS 26 SDK. The default macos-latest
+    # image (Xcode 16.x, iOS 18 SDK) CANNOT link this project's frameworks: the
+    # Compose-UIKit runtime references iOS 26 symbols (e.g. UIViewLayoutRegion in
+    # the UIUtilities framework), so `linkDebugFrameworkIos*` fails with
+    # "Undefined symbols for architecture arm64" on an older SDK. api-check.yml
+    # only *compiles* klibs (never links a framework), which is why it still
+    # passes on macos-latest.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
 
@@ -76,9 +83,10 @@ jobs:
       - name: Assemble all targets
         run: ./gradlew assemble
 
-      # Executes Kotlin/Native unit tests on the iOS simulator. The :sharingan
-      # simulator deviceId is pinned in sharingan/build.gradle.kts; if a runner's
-      # Xcode lacks that device the step fails fast (a deviceId follow-up, not a
-      # silent skip).
+      # Executes Kotlin/Native unit tests on the iOS simulator. :sharingan pins
+      # deviceId "iPhone 17 Pro" (sharingan/build.gradle.kts), which exists in
+      # the macos-26 iOS 26 runtime; :sharingan-noop pins none and uses the KGP
+      # default. If a runtime lacks the device the step fails fast (no silent
+      # skip) — a deviceId follow-up, not a hidden gap.
       - name: Run iOS simulator unit tests
         run: ./gradlew :sharingan:iosSimulatorArm64Test :sharingan-noop:iosSimulatorArm64Test
