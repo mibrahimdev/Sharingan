@@ -97,6 +97,13 @@ git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
 ./gradlew publishToMavenLocal
 ```
 
+Contributors: `:sharingan` and `:sharingan-noop` must expose an **identical
+public API** so the debug→release swap is safe. `./gradlew checkApiParity` (run in
+CI) enforces this and fails on any drift — see
+[`docs/api-parity.md`](docs/api-parity.md) for the contract and why a few debug-only
+symbols are excluded. After an intentional API change, run `./gradlew apiDump` and
+commit the regenerated dumps.
+
 Maintainers: cutting a Maven Central release is a two-step,
 stage-then-manually-release flow — see [`docs/RELEASING.md`](docs/RELEASING.md).
 
