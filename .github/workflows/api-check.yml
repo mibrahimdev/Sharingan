@@ -10,8 +10,20 @@ name: Public API check
 #     (issue #12). This is what makes the "swap sharingan-noop in release" safety
 #     story enforceable rather than dependent on human discipline.
 # Regenerate intentional changes locally with `./gradlew apiDump` and commit.
+#
+# Docs/site-only changes skip both jobs (paths-ignore): a markdown/CSS edit can't
+# alter the Kotlin public-API surface, and these jobs only diff the committed
+# *.api / *.klib.api dumps — they never run the library code. Skipping mirrors
+# build.yml's docs gate (and is safe because `main` has no required status check
+# that a path-filtered skip could leave pending). Any PR that also touches
+# code/build files still runs the full API gate.
 on:
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
