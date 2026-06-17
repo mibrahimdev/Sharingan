@@ -1,8 +1,8 @@
 name: Build & Test
 
 # PR-time build/test gate (issue #22). Every pull request and every push to the
-# dev integration trunk or main must build all KMP targets and run the JVM + iOS
-# unit tests before it can merge.
+# develop integration trunk or main must build all KMP targets and run the JVM +
+# iOS unit tests before it can merge.
 # This complements the other workflows, which guard different things:
 #   - api-check.yml  -> public-API surface stability (apiCheck)
 #   - publish.yml    -> tag-triggered Maven Central release
@@ -23,7 +23,7 @@ on:
       - "site/**"
       - ".github/workflows/pages.yml"
   push:
-    branches: [main, dev]
+    branches: [main, develop]
     paths-ignore:
       - "**.md"
       - "docs/**"
