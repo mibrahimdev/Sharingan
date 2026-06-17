@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,6 +33,8 @@ internal object HttpDescriptor : ProtocolDescriptor<HttpEvent>() {
 
     override val protocol: Protocol = Protocol.HTTP
     override val eventNoun: String = "requests"
+    override val tabIcon: ImageVector = SharinganIcons.Globe
+    override val searchPlaceholder: String = "Filter path, status, header…"
 
     override val chips: List<FilterChipSpec> = listOf(
         FilterChipSpec("all", "All"),
