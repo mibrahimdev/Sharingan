@@ -1,9 +1,8 @@
 package dev.sharingan.internal
 
 import dev.sharingan.SharinganEvent
-import dev.sharingan.ui.Protocol
 import dev.sharingan.ui.descriptorOf
-import dev.sharingan.ui.protocolOf
+import dev.sharingan.ui.protocolCountsLine
 
 /**
  * What the capture notification should say — the platform-free half of the
@@ -29,9 +28,7 @@ internal fun notificationContentOf(
 ): NotificationContent? {
     if (events.isEmpty()) return null
     val stateLabel = if (recording) "Capturing" else "Paused"
-    val countsLine = Protocol.entries.joinToString(" · ") { protocol ->
-        "${protocol.name} ${events.count { protocolOf(it) == protocol }}"
-    }
+    val countsLine = protocolCountsLine(events)
     val ticker = events.takeLast(3).reversed().joinToString("\n") { descriptorOf(it).tickerLine(it) }
     return NotificationContent(
         title = "Sharingan — $stateLabel · ${events.size} events",
