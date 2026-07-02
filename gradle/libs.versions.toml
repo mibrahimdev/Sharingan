@@ -1,5 +1,5 @@
 [versions]
-sharingan = "0.1.0"
+sharingan = "0.2.0"
 
 kotlin = "2.4.0"
 agp = "8.13.2"
