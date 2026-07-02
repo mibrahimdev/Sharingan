@@ -30,7 +30,8 @@ import java.util.Locale
  * (`LocaleManager`, what `AppCompatDelegate.setApplicationLocales` calls under
  * the hood on API 33+) directly in the process, since a test-APK host Activity
  * can't be launched into the app-under-test's process and the leak we assert is
- * process-global anyway. Requires API 33+ (the emulators CI runs on).
+ * process-global anyway. Requires API 33+; CI's `android` job (build.yml) runs
+ * the connected suites on an API 34 emulator, so this regression gates PRs.
  */
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 33) // LocaleManager is API 33+; skip (don't crash) below.
