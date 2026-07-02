@@ -78,10 +78,10 @@ then depend on the coordinate for your build type:
 
 | Coordinate | Use |
 |---|---|
-| `io.github.mibrahimdev:sharingan:0.2.0` | debug builds (capture + UI) |
-| `io.github.mibrahimdev:sharingan-noop:0.2.0` | release builds (same API, inert, no UI) |
+| `io.github.mibrahimdev:sharingan:0.1.1` | debug builds (capture + UI) |
+| `io.github.mibrahimdev:sharingan-noop:0.1.1` | release builds (same API, inert, no UI) |
 
-**Tested versions:** Sharingan 0.2.0 → Kotlin **2.4.0**, Ktor **3.5.0**,
+**Tested versions:** Sharingan 0.1.1 → Kotlin **2.4.0**, Ktor **3.5.0**,
 Compose Multiplatform **1.11.1**, AGP 8.13.2. Later versions may work but are
 unverified — Kotlin/Native has no cross-compiler-version binary
 compatibility guarantee, so match the Kotlin version exactly.
@@ -111,8 +111,8 @@ stage-then-manually-release flow — see [`docs/RELEASING.md`](docs/RELEASING.md
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.mibrahimdev:sharingan:0.2.0")
-    releaseImplementation("io.github.mibrahimdev:sharingan-noop:0.2.0")
+    debugImplementation("io.github.mibrahimdev:sharingan:0.1.1")
+    releaseImplementation("io.github.mibrahimdev:sharingan-noop:0.1.1")
 }
 ```
 
@@ -130,7 +130,7 @@ won't see Sharingan at all.
 // shared/build.gradle.kts
 kotlin {
     val sharinganArtifact = if (providers.gradleProperty("release").isPresent)
-        "io.github.mibrahimdev:sharingan-noop:0.2.0" else "io.github.mibrahimdev:sharingan:0.2.0"
+        "io.github.mibrahimdev:sharingan-noop:0.1.1" else "io.github.mibrahimdev:sharingan:0.1.1"
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
