@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 internal class ScreenInsetsTest {
 
     @Test
-    fun `Given strip=true, When content insets built, Then top side absent`() {
+    fun `Given strip=true When content insets built Then top side absent`() {
         val density = Density(1f)
         val source = WindowInsets(left = 7, top = 13, right = 17, bottom = 23)
 
