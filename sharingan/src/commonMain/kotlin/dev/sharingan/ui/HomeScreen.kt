@@ -190,11 +190,7 @@ private fun TabBar(
     Row(Modifier.fillMaxWidth()) {
         Protocol.entries.forEach { protocol ->
             val on = protocol == selected
-            val icon = when (protocol) {
-                Protocol.HTTP -> SharinganIcons.Globe
-                Protocol.MQTT -> SharinganIcons.Waves
-                Protocol.BLE -> SharinganIcons.Bluetooth
-            }
+            val icon = descriptorOf(protocol).tabIcon
             Column(
                 Modifier.weight(1f).clickable { onSelect(protocol) },
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -255,11 +251,7 @@ private fun SearchField(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSharinganColors.current
-    val placeholder = when (protocol) {
-        Protocol.HTTP -> "Filter path, status, header…"
-        Protocol.MQTT -> "Filter topic, payload…"
-        Protocol.BLE -> "Filter characteristic, device…"
-    }
+    val placeholder = descriptorOf(protocol).searchPlaceholder
     Row(
         modifier
             .fillMaxWidth()

@@ -18,6 +18,14 @@ internal data class FilterChipSpec(val key: String, val label: String)
 
 internal fun protocolOf(event: SharinganEvent): Protocol = descriptorOf(event).protocol
 
+/** `HTTP n · MQTT n · BLE n` — one segment per protocol, in tab order. The
+ *  single home for the cross-protocol counts line shared by the export header
+ *  and the capture notification. */
+internal fun protocolCountsLine(events: List<SharinganEvent>): String =
+    Protocol.entries.joinToString(" · ") { protocol ->
+        "${protocol.name} ${events.count { protocolOf(it) == protocol }}"
+    }
+
 /** The design's per-protocol chip rows. */
 internal fun chipsFor(protocol: Protocol): List<FilterChipSpec> = descriptorOf(protocol).chips
 

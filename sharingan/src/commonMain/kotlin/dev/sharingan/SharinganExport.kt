@@ -2,6 +2,7 @@ package dev.sharingan
 
 import dev.sharingan.internal.formatClockTime
 import dev.sharingan.ui.descriptorOf
+import dev.sharingan.ui.protocolCountsLine
 
 /**
  * Turns captured events into shareable text.
@@ -78,12 +79,8 @@ public object SharinganExport {
 
     // ── session assembly ─────────────────────────────────────────
 
-    private fun countsLine(events: List<SharinganEvent>): String {
-        val http = events.count { it is HttpEvent }
-        val mqtt = events.count { it is MqttEvent }
-        val ble = events.count { it is BleEvent }
-        return "${events.size} events · HTTP $http · MQTT $mqtt · BLE $ble"
-    }
+    private fun countsLine(events: List<SharinganEvent>): String =
+        "${events.size} events · ${protocolCountsLine(events)}"
 
     private fun eventJson(event: SharinganEvent, indent: String): String {
         val fields = mutableListOf<Pair<String, String>>()

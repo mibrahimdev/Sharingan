@@ -1,6 +1,7 @@
 package dev.sharingan.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import dev.sharingan.BleEvent
 import dev.sharingan.BleOperation
 import dev.sharingan.formatBytes
@@ -11,6 +12,8 @@ internal object BleDescriptor : ProtocolDescriptor<BleEvent>() {
 
     override val protocol: Protocol = Protocol.BLE
     override val eventNoun: String = "operations"
+    override val tabIcon: ImageVector = SharinganIcons.Bluetooth
+    override val searchPlaceholder: String = "Filter characteristic, device…"
 
     override val chips: List<FilterChipSpec> = listOf(
         FilterChipSpec("all", "All"),

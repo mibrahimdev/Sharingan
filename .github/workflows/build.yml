@@ -1,14 +1,17 @@
 name: Build & Test
 
-# PR-time build/test gate (issue #22). Every pull request and every push to main
-# must build all KMP targets and run the JVM + iOS unit tests before it can merge.
+# PR-time build/test gate (issue #22). Every pull request and every push to the
+# develop integration trunk or main must build all KMP targets and run the JVM +
+# iOS unit tests before it can merge.
 # This complements the other workflows, which guard different things:
 #   - api-check.yml  -> public-API surface stability (apiCheck)
 #   - publish.yml    -> tag-triggered Maven Central release
 # Neither builds the code or runs tests on a PR, so this workflow is the actual
 # correctness gate. A PR that introduces a failing unit test is blocked here:
 #   - a broken common/JVM test fails the `jvm` job's testDebugUnitTest step;
-#   - a broken iOS test fails the `ios` job's iosSimulatorArm64Test step.
+#   - a broken iOS test fails the `ios` job's iosSimulatorArm64Test step;
+#   - a broken instrumented/UI test fails the `android` job's connected
+#     test step, which runs the device suites on an API 34 emulator.
 # Docs/site-only changes skip this gate (paths-ignore): they can't affect the
 # Kotlin/Gradle build or tests, so there's no point spending ~25 min of macOS
 # runner time linking the iOS frameworks for a README or CSS edit. Any PR that
@@ -22,7 +25,7 @@ on:
       - "site/**"
       - ".github/workflows/pages.yml"
   push:
-    branches: [main]
+    branches: [main, develop]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -105,3 +108,53 @@ jobs:
       # skip) — a deviceId follow-up, not a hidden gap.
       - name: Run iOS simulator unit tests
         run: ./gradlew :sharingan:iosSimulatorArm64Test :sharingan-noop:iosSimulatorArm64Test
+
+  # Android instrumented (connected) tests on a Linux-hosted emulator. This is
+  # the only job that exercises the device suites — :sharingan's Compose UI
+  # tests and the sample app's notification E2E + locale-leak regression
+  # (issue #38, LoggerLocaleLeakTest) — so device-only regressions are caught
+  # at PR time instead of relying on manual emulator runs. API 34 satisfies
+  # the test's @SdkSuppress(minSdkVersion = 33) gate (LocaleManager is 33+);
+  # anything lower would silently skip the locale regression.
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      # Grant the runner access to /dev/kvm — the emulator needs hardware
+      # acceleration or it fails to boot within the action's timeout.
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Boots the emulator and runs every connected suite in one go. A failing
+      # instrumented test (e.g. the logger leaking its locale into the host)
+      # blocks the PR here.
+      - name: Run instrumented tests (API 34 emulator)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          script: ./gradlew :sharingan:connectedDebugAndroidTest :sample:composeApp:connectedDebugAndroidTest
+
+      # Connected-test HTML/XML reports are only useful on red runs; keep CI
+      # storage lean by uploading them just on failure.
+      - name: Upload instrumented test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: connected-test-reports
+          path: |
+            **/build/reports/androidTests/connected/
+            **/build/outputs/androidTest-results/connected/

@@ -1,6 +1,7 @@
 package dev.sharingan.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import dev.sharingan.MqttDirection
 import dev.sharingan.MqttEvent
 import dev.sharingan.formatBytes
@@ -12,6 +13,8 @@ internal object MqttDescriptor : ProtocolDescriptor<MqttEvent>() {
 
     override val protocol: Protocol = Protocol.MQTT
     override val eventNoun: String = "messages"
+    override val tabIcon: ImageVector = SharinganIcons.Waves
+    override val searchPlaceholder: String = "Filter topic, payload…"
 
     override val chips: List<FilterChipSpec> = listOf(
         FilterChipSpec("all", "All"),

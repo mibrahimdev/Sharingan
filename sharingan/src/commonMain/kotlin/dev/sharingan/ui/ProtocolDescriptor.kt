@@ -1,6 +1,7 @@
 package dev.sharingan.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import dev.sharingan.BleEvent
 import dev.sharingan.HttpEvent
 import dev.sharingan.MqttEvent
@@ -33,6 +34,12 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
 
     /** Quick-filter chips below the search field, in design order. */
     abstract val chips: List<FilterChipSpec>
+
+    /** Tab-bar icon for this protocol's tab. */
+    abstract val tabIcon: ImageVector
+
+    /** Placeholder hint shown in the search field on this protocol's tab. */
+    abstract val searchPlaceholder: String
 
     /** Chip matching; `"all"` is handled by the caller before dispatch. */
     protected abstract fun chipMatches(event: E, chipKey: String): Boolean

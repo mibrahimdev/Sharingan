@@ -5,6 +5,7 @@ import dev.sharingan.BleOperation
 import dev.sharingan.HttpEvent
 import dev.sharingan.MqttDirection
 import dev.sharingan.MqttEvent
+import dev.sharingan.SharinganEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -85,6 +86,24 @@ internal class EventFilterTest {
     fun `Given a blank query When searching Then everything matches`() {
         assertTrue(matchesQuery(http(), ""))
         assertTrue(matchesQuery(http(), "   "))
+    }
+
+    @Test
+    fun `Given a mix of events When the counts line is built Then it shows per-protocol counts`() {
+        val events: List<SharinganEvent> =
+            listOf(http(), http(), mqtt(MqttDirection.PUBLISH), ble(BleOperation.NOTIFY))
+        assertEquals("HTTP 2 · MQTT 1 · BLE 1", protocolCountsLine(events))
+    }
+
+    @Test
+    fun `When the counts line is built Then it has one segment for every protocol`() {
+        val events: List<SharinganEvent> =
+            listOf(http(), mqtt(MqttDirection.PUBLISH), ble(BleOperation.NOTIFY))
+        val line = protocolCountsLine(events)
+        assertEquals(Protocol.entries.size, line.split(" · ").size)
+        for (p in Protocol.entries) {
+            assertTrue(line.contains(p.name))
+        }
     }
 
     @Test

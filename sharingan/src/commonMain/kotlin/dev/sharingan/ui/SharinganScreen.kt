@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,6 +19,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import dev.sharingan.HttpEvent
 import dev.sharingan.Sharingan
 import dev.sharingan.SharinganEvent
@@ -137,34 +140,39 @@ internal fun SharinganScreenContent(
 ) {
     val colors = LocalSharinganColors.current
     PlatformBackHandler(enabled = selectedEvent != null, onBack = onBack)
-    Scaffold(
-        modifier = modifier,
-        containerColor = colors.bg,
-        contentWindowInsets = WindowInsets.safeDrawing,
-    ) { innerPadding ->
-        Box(
-            Modifier
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .fillMaxSize(),
-        ) {
-            if (selectedEvent != null) {
-                DetailScreenContent(event = selectedEvent, onBack = onBack, onShare = onShareSingle)
-            } else {
-                HomeScreenContent(
-                    state = homeState,
-                    onSelectProtocol = onSelectProtocol,
-                    onQueryChange = onQueryChange,
-                    onChipChange = onChipChange,
-                    onToggleRecording = onToggleRecording,
-                    onOpenEvent = onOpenEvent,
-                    onShareAll = onShareAll,
-                )
+    // The logger is a locale-neutral surface — always LTR, on every platform
+    // (including iOS) and in Studio previews, regardless of the host's layout
+    // direction (issue #38).
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Scaffold(
+            modifier = modifier,
+            containerColor = colors.bg,
+            contentWindowInsets = WindowInsets.safeDrawing,
+        ) { innerPadding ->
+            Box(
+                Modifier
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
+                    .fillMaxSize(),
+            ) {
+                if (selectedEvent != null) {
+                    DetailScreenContent(event = selectedEvent, onBack = onBack, onShare = onShareSingle)
+                } else {
+                    HomeScreenContent(
+                        state = homeState,
+                        onSelectProtocol = onSelectProtocol,
+                        onQueryChange = onQueryChange,
+                        onChipChange = onChipChange,
+                        onToggleRecording = onToggleRecording,
+                        onOpenEvent = onOpenEvent,
+                        onShareAll = onShareAll,
+                    )
+                }
+                SharinganToast(toastMessage, Modifier.align(Alignment.BottomCenter))
             }
-            SharinganToast(toastMessage, Modifier.align(Alignment.BottomCenter))
         }
-    }
-    if (shareState != null) {
-        ShareSheet(state = shareState, onAction = onShareAction, onDismiss = onShareDismiss)
+        if (shareState != null) {
+            ShareSheet(state = shareState, onAction = onShareAction, onDismiss = onShareDismiss)
+        }
     }
 }
