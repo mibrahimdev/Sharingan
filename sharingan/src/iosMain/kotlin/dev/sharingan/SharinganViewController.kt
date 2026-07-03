@@ -15,9 +15,11 @@ import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
 /**
- * The Sharingan log browser as a `UIViewController` — embed or present it
- * however your app likes (sheet, push, debug menu). For the common case,
- * call [presentSharingan] instead.
+ * The Sharingan log browser as a `UIViewController` — embed or push it
+ * however your app likes (full-screen, navigation stack, debug menu). For
+ * sheet presentation use [presentSharingan], which compensates for a
+ * Compose Multiplatform inset quirk (#42); presenting this raw controller
+ * as your own page sheet shows a phantom top gap.
  *
  * A host app whose Info.plist lacks `CADisableMinimumFrameDurationOnPhone`
  * must never crash (Compose Multiplatform 1.11 aborts on a strict plist

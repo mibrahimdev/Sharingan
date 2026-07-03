@@ -17,6 +17,7 @@ internal class ScreenInsetsTest {
 
         assertEquals(0, stripped.getTop(density))
         assertEquals(7, stripped.getLeft(density, LayoutDirection.Ltr))
+        assertEquals(17, stripped.getRight(density, LayoutDirection.Ltr))
         assertEquals(23, stripped.getBottom(density))
         assertEquals(13, sharinganContentInsets(source, stripTop = false).getTop(density))
     }
