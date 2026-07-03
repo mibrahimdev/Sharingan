@@ -3,8 +3,10 @@ package dev.sharingan.ui
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.Scaffold
@@ -17,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -26,6 +29,15 @@ import dev.sharingan.Sharingan
 import dev.sharingan.SharinganEvent
 import dev.sharingan.SharinganStore
 import kotlinx.coroutines.delay
+
+// Sheet hosts (iOS page sheet) already sit below the status bar, so the top
+// safe-area inset would be paid twice (#42). Full-screen/embedded hosts still
+// need it. internal -> not part of the checked public API surface.
+internal val LocalStripTopInset = staticCompositionLocalOf { false }
+
+internal fun sharinganContentInsets(safeDrawing: WindowInsets, stripTop: Boolean): WindowInsets =
+    if (stripTop) safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+    else safeDrawing
 
 /**
  * The Sharingan log browser: home (three protocol tabs), event detail, and
@@ -147,7 +159,7 @@ internal fun SharinganScreenContent(
         Scaffold(
             modifier = modifier,
             containerColor = colors.bg,
-            contentWindowInsets = WindowInsets.safeDrawing,
+            contentWindowInsets = sharinganContentInsets(WindowInsets.safeDrawing, LocalStripTopInset.current),
         ) { innerPadding ->
             Box(
                 Modifier

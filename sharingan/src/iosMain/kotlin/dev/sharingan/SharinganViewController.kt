@@ -1,7 +1,9 @@
 package dev.sharingan
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.window.ComposeUIViewController
 import dev.sharingan.internal.topmostViewController
+import dev.sharingan.ui.LocalStripTopInset
 import dev.sharingan.ui.SharinganScreen
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
@@ -23,11 +25,19 @@ import platform.darwin.dispatch_get_main_queue
  */
 @ObjCName("SharinganViewController", swiftName = "SharinganViewController")
 @OptIn(ExperimentalObjCName::class)
-public fun SharinganViewController(): UIViewController = ComposeUIViewController(configure = {
-    enforceStrictPlistSanityCheck = false
-}) {
-    SharinganScreen()
-}
+public fun SharinganViewController(): UIViewController = composeVc(stripTopInset = false)
+
+// internal — presentSharingan() uses this; strips the phantom top inset (#42):
+// a page sheet already sits below the status bar, but CMP 1.11 reads insets
+// from the UIWindow, so safeDrawing would pay the top inset twice.
+internal fun sharinganSheetViewController(): UIViewController = composeVc(stripTopInset = true)
+
+private fun composeVc(stripTopInset: Boolean): UIViewController =
+    ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) {
+        CompositionLocalProvider(LocalStripTopInset provides stripTopInset) {
+            SharinganScreen()
+        }
+    }
 
 /**
  * Presents the log browser over the topmost view controller of the key
@@ -58,6 +68,6 @@ public fun presentSharingan(animated: Boolean = true) {
         // Guard: UIKit silently swallows a present() while another
         // presentation/dismissal is already in flight; make the no-op explicit.
         if (top.isBeingDismissed() || top.isBeingPresented()) return@dispatch_async
-        top.presentViewController(SharinganViewController(), animated = animated, completion = null)
+        top.presentViewController(sharinganSheetViewController(), animated = animated, completion = null)
     }
 }
