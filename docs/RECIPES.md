@@ -38,6 +38,9 @@ peripheral.observe(hrCharacteristic).onEach { bytes ->
 private fun Peripheral.nameOrId() = name ?: identifier.toString()
 ```
 
+Note: the `value` logger parameter is stored on `BleEvent.payload` — that's the
+field name you'll see in exports and in `Sharingan.events`.
+
 ## iOS — SwiftUI wrapper
 
 ```swift

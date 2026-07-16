@@ -33,16 +33,17 @@ Design constraints to settle in the session (full list in #27):
 - **Schema:** session table (id, started-at, app/build/device meta) + events table
   (FK session, timestamp, type, indexed cols + `kotlinx.serialization` JSON blob).
   Composes with the event ABI frozen in #15.
-- **Retention policy** (max sessions / age / rows-per-session) is what
-  `configure(capacity)` (closed #18) becomes — added additively once persistence
-  exists, which is why the simple in-memory capacity knob was dropped.
+- **Retention policy** (max sessions / age / rows-per-session) is what the
+  capacity knob proposed in #18 (closed) becomes — added additively once
+  persistence exists, which is why the simple in-memory capacity knob was
+  dropped (`SharinganStore(capacity)` remains the only capacity surface today).
 - **Security must be designed in, not bolted on.** A SQLite file is extractable;
   persisting request/response bodies can write tokens/PII to disk. Need
   bodies-off-by-default for persistence, redaction, retention/auto-purge,
   clear-on-new-session. Debug-only mitigates but isn't sufficient alone.
 
-Sequencing: ship 1.0 on the in-memory architecture first (close the parity check
-#12), then take persistence on as a deliberate v2 epic.
+Sequencing: ship 1.0 on the in-memory architecture first (the parity check #12
+is closed and enforced in CI), then take persistence on as a deliberate v2 epic.
 
 ## iOS / Swift ergonomics
 
@@ -67,7 +68,6 @@ Sequencing: ship 1.0 on the in-memory architecture first (close the parity check
 
 - **SPM package / GitHub Releases hosting** of the XCFramework, to replace the
   manual `assembleSharinganReleaseXCFramework` + drag-and-drop step.
-- **Maven Central publishing**, to replace the `mavenLocal()` install step.
 
 ## Android
 
