@@ -1,7 +1,7 @@
 # Sharingan — Architecture & Handoff Notes
 
 Technical handoff for maintainers. Every claim below is checkable against a named file.
-Companion docs: [README.md](../README.md) (user-facing), [AGENTS.md](../AGENTS.md) (terse API reference, mirrored at `llms.txt`), [docs/RECIPES.md](RECIPES.md) (integration snippets). The git log is itself a design doc — each commit message states the deliverable and rationale for that step (`git log`).
+Companion docs: [README.md](../README.md) (user-facing), [AGENTS.md](../AGENTS.md) (terse API reference, mirrored at `llms.txt`), [docs/RECIPES.md](RECIPES.md) (integration snippets), [docs/api-parity.md](api-parity.md) (debug/release parity contract), [docs/RELEASING.md](RELEASING.md) (Maven Central release flow). The git log is itself a design doc — each commit message states the deliverable and rationale for that step (`git log`).
 
 ---
 
@@ -19,7 +19,7 @@ Sharingan is an on-device debug logger for Kotlin Multiplatform (Android API 24+
                       can compile against either artifact (-Psharingan.noop)
 ```
 
-Modules are declared in [settings.gradle.kts](../settings.gradle.kts). `:sharingan` and `:sharingan-noop` publish as `dev.sharingan:sharingan` / `dev.sharingan:sharingan-noop` (version in [gradle/libs.versions.toml](../gradle/libs.versions.toml), key `sharingan`).
+Modules are declared in [settings.gradle.kts](../settings.gradle.kts). `:sharingan` and `:sharingan-noop` publish as `io.github.mibrahimdev:sharingan` / `io.github.mibrahimdev:sharingan-noop` (Kotlin namespace `dev.sharingan`; version in [gradle/libs.versions.toml](../gradle/libs.versions.toml), key `sharingan`).
 
 ### Data flow
 
@@ -181,7 +181,7 @@ Quirks and facts a maintainer needs:
 - **AGP 8.13's bundled lint cannot read Kotlin 2.4 metadata.** The sample disables release-lint: `lint.checkReleaseBuilds = false` in [sample/composeApp/build.gradle.kts](../sample/composeApp/build.gradle.kts) (the comment in that file is the record). Revisit when AGP catches up.
 - **`explicitApi()` mode** is on in both library modules — every declaration needs an explicit visibility modifier and public members need explicit return types. The compiler is your API-surface linter.
 - **API-parity proof:** the sample selects its dependency at configuration time — `-Psharingan.noop` substitutes `:sharingan-noop` for `:sharingan` in the *same* `commonMain` dependency list (see the `providers.gradleProperty("sharingan.noop")` block in the sample's build file). `./gradlew :sample:composeApp:assembleRelease -Psharingan.noop` therefore compiles every real call site against the no-op surface; if it builds, parity holds.
-- **Publishing** is plain `maven-publish` (no signing, no Central config). `./gradlew publishToMavenLocal` works today; Maven Central publishing (signing, POM metadata, Sonatype) is **not yet configured**.
+- **Publishing:** signed Maven Central staging is configured — the `Publish to Maven Central` workflow stages a deployment on the Central Portal, then a human releases it (see [RELEASING.md](RELEASING.md)). `./gradlew publishToMavenLocal` still works for local builds.
 - The Android library publishes the `release` variant only (`publishLibraryVariants("release")`); `consumer-rules.pro` exists but is currently empty.
 - Sample install: `./gradlew :sample:composeApp:installDebug`. There is **no checked-in Xcode project** for the sample's iOS side — only `MainViewController()` ([sample/composeApp/src/iosMain/.../MainViewController.kt](../sample/composeApp/src/iosMain/kotlin/dev/sharingan/sample/MainViewController.kt)) for a host to wrap.
 

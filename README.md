@@ -1,10 +1,30 @@
 # Sharingan 👁️
 
-**Live HTTP · MQTT · Bluetooth logging for Kotlin Multiplatform — iOS & Android, one API.**
+**Live HTTP · MQTT · Bluetooth logging for Kotlin Multiplatform — iOS & Android, one API, exportable as agent-ready Markdown.**
 
-Sharingan is an on-device debug logger. It captures protocol traffic while you use your app, surfaces it in a sticky capture notification (Android) and a built-in log browser (both platforms), and is optimized for **extracting clean, structured logs to hand to a human — or an AI agent** — to pin down bugs across backend, app and firmware.
+Sharingan is an on-device debug logger for KMP apps. It captures protocol traffic while you use your app, then hands you clean, structured logs — method, URL, status, headers, bodies — to paste straight into Claude or any chat and pin down bugs across backend, app and firmware. A sticky capture notification (Android) and a built-in log browser (both platforms) keep it one tap away.
 
 > The name is a Naruto reference: the eye that sees everything.
+
+## 30-second start (Android + Ktor)
+
+```kotlin
+// build.gradle.kts
+dependencies {
+    debugImplementation("io.github.mibrahimdev:sharingan:0.1.1")
+    releaseImplementation("io.github.mibrahimdev:sharingan-noop:0.1.1")
+}
+```
+
+```kotlin
+// capture — one Ktor line
+HttpClient { install(SharinganKtor) }
+
+// open the log browser (or just tap the capture notification)
+Sharingan.show(context)
+```
+
+No init code — a manifest-merged ContentProvider starts Sharingan automatically. iOS, KMP and pure-Swift setup in [Setup](#setup) below.
 
 **Android**
 
@@ -31,7 +51,8 @@ Sharingan is an on-device debug logger. It captures protocol traffic while you u
   </tr>
 </table>
 
-**iOS** — the same browser, presented from Swift via `SharinganViewControllerKt.presentSharingan(animated:)`:
+<details>
+<summary><strong>iOS</strong> — the same browser, presented from Swift via <code>SharinganViewControllerKt.presentSharingan(animated:)</code> (tap to expand)</summary>
 
 <table>
   <tr>
@@ -55,6 +76,7 @@ Sharingan is an on-device debug logger. It captures protocol traffic while you u
     <td align="center"><sub>Light mode follows the system theme</sub></td>
   </tr>
 </table>
+</details>
 
 ## Features
 
@@ -85,27 +107,6 @@ then depend on the coordinate for your build type:
 Compose Multiplatform **1.11.1**, AGP 8.13.2. Later versions may work but are
 unverified — Kotlin/Native has no cross-compiler-version binary
 compatibility guarantee, so match the Kotlin version exactly.
-
-#### Building from source / contributing
-
-To build against local changes, publish to your Maven local repo and add
-`mavenLocal()` to your repositories (`settings.gradle.kts` →
-`dependencyResolutionManagement { repositories { mavenLocal(); ... } }`):
-
-```bash
-git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
-./gradlew publishToMavenLocal
-```
-
-Contributors: `:sharingan` and `:sharingan-noop` must expose an **identical
-public API** so the debug→release swap is safe. `./gradlew checkApiParity` (run in
-CI) enforces this and fails on any drift — see
-[`docs/api-parity.md`](docs/api-parity.md) for the contract and why a few debug-only
-symbols are excluded. After an intentional API change, run `./gradlew apiDump` and
-commit the regenerated dumps.
-
-Maintainers: cutting a Maven Central release is a two-step,
-stage-then-manually-release flow — see [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ### Android app (two lines)
 
@@ -168,6 +169,9 @@ and `sharingan-noop/build/XCFrameworks/release/Sharingan.xcframework` — same
 framework name on purpose, so `import Sharingan` compiles in every
 configuration and your build settings decide which one links:
 
+<details>
+<summary>Step-by-step Xcode wiring (search paths, embed, link)</summary>
+
 1. Copy both, e.g. `Vendor/Debug/Sharingan.xcframework` and
    `Vendor/Release/Sharingan.xcframework`.
 2. Add one of them to the target (General → Frameworks → Embed & Sign), then
@@ -178,16 +182,20 @@ configuration and your build settings decide which one links:
    embedding the other dyld-crashes at launch — verify the embedded framework
    in the built `.app` matches the configuration.
 3. `import Sharingan`, then `SharinganViewControllerKt.presentSharingan(animated: true)`.
+</details>
 
 A pure-Swift app has no Ktor plugin, so capture your `URLSession` traffic
-manually — call `Sharingan.http.log(...)` from your networking layer (see
-[Quick start → HTTP](#http--automatic-ktor) for the manual-logging note and
+manually — call `Sharingan.shared.http.log(...)` from your networking layer (see
+[Capturing traffic → HTTP](#http--automatic-ktor) for the manual-logging note and
 [AGENTS.md](AGENTS.md) for the full parameter list). Without it the viewer
-opens but stays empty.
+opens but stays empty. Heads-up: Kotlin default arguments don't bridge to
+Swift — every `log(...)` parameter is required; see the
+[RECIPES.md gotcha](docs/RECIPES.md#ios--manual-http-logging-from-swift-urlsession-no-ktor)
+before wiring it.
 
 Don't mix this with the Maven/KMP path in one app — pick one.
 
-## Quick start
+## Capturing traffic
 
 ### HTTP — automatic (Ktor)
 
@@ -197,13 +205,20 @@ val client = HttpClient {
 }
 ```
 
-The plugin records method, URL, status, headers, textual bodies (capped at 64 KB, configurable), duration and a TTFB/Download timing split. `Authorization`, `Cookie`, `Set-Cookie` and `Proxy-Authorization` values are masked **at capture time** — secrets never reach the buffer. Streaming responses (`text/event-stream`, binary) are never consumed. Transport failures are recorded, then rethrown untouched.
+The plugin records:
+
+- method, URL, status, headers, duration
+- textual bodies, capped at 64 KB (`maxBodyBytes`, configurable)
+- a TTFB / Download timing split
+
+`Authorization`, `Cookie`, `Set-Cookie` and `Proxy-Authorization` values are masked **at capture time** — secrets never reach the buffer. Streaming responses (`text/event-stream`, binary) are never consumed. Transport failures are recorded, then rethrown untouched.
 
 ```kotlin
 install(SharinganKtor) {
     captureBodies = true            // default — request/response bodies are recorded
     maxBodyBytes = 64 * 1024        // default
-    redactedHeaders = setOf("Authorization", "X-Api-Key")
+    // overriding REPLACES the default set — re-list the defaults you want to keep
+    redactedHeaders = setOf("Authorization", "Proxy-Authorization", "Cookie", "Set-Cookie", "X-Api-Key")
 }
 ```
 
@@ -258,7 +273,11 @@ More adapters (KMQTT/HiveMQ/Paho callbacks, full Kable wiring, shake-to-open) li
 
 The capture notification shows per-protocol counters, a three-event ticker when expanded, and a Pause/Resume action. It is silent and updated in place. Two things to know:
 
-- **Android 13+:** the notification needs the `POST_NOTIFICATIONS` runtime permission. Sharingan's `AndroidManifest.xml` declares `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />`, so manifest merger surfaces it in **your app's merged manifest** (visible in *Merged Manifest* in Android Studio and in the APK). The library **never requests it at runtime** — there is no `requestPermissions` call anywhere in Sharingan, so it can't trigger a permission prompt or change your app's runtime behavior; your app decides whether to ask the user. Without the grant, capture still works silently; open the browser with `Sharingan.show(context)`. Since the debug logger ships only in debug/QA builds, the permission does not reach your release manifest (the `sharingan-noop` release artifact declares nothing).
+- **Android 13+:** the notification needs the `POST_NOTIFICATIONS` runtime permission.
+  - Sharingan's `AndroidManifest.xml` declares it, so manifest merger surfaces it in **your app's merged manifest** (visible in *Merged Manifest* in Android Studio and in the APK).
+  - The library **never requests it at runtime** — no `requestPermissions` call anywhere in Sharingan, so it can't trigger a prompt or change your app's runtime behavior; your app decides whether to ask the user.
+  - Without the grant, capture still works silently — open the browser with `Sharingan.show(context)`.
+  - Ships only in debug/QA builds, so the permission never reaches your release manifest (the `sharingan-noop` release artifact declares nothing).
 - **Do Not Disturb:** because the notification is silent, DND hides it on most devices — `Sharingan.show(context)` always works (wire it to a debug-drawer button or shake gesture).
 
 ### iOS
@@ -317,7 +336,7 @@ Sharingan.clear()                // drop everything
 Sharingan.setNotificationEnabled(false)  // Android: opt out of the notification
 ```
 
-The buffer is an in-memory ring (default 300 events, `SharinganStore(capacity)` for custom sizes) — nothing is ever written to disk, and process death clears it. Loggers are thread-safe and callable from any thread.
+`SharinganStore(capacity)` overrides the default 300-event ring (memory-only; process death clears it). Loggers are thread-safe, callable from any thread.
 
 ## Release builds: what "no effect" means
 
@@ -335,6 +354,27 @@ The buffer is an in-memory ring (default 300 events, `SharinganStore(capacity)` 
 ./gradlew :sample:composeApp:assembleRelease -Psharingan.noop  # parity proof
 ```
 
+## Contributing & releases
+
+To build against local changes, publish to your Maven local repo and add
+`mavenLocal()` to your repositories (`settings.gradle.kts` →
+`dependencyResolutionManagement { repositories { mavenLocal(); ... } }`):
+
+```bash
+git clone https://github.com/mibrahimdev/Sharingan && cd Sharingan
+./gradlew publishToMavenLocal
+```
+
+Contributors: `:sharingan` and `:sharingan-noop` must expose an **identical
+public API** so the debug→release swap is safe. `./gradlew checkApiParity` (run in
+CI) enforces this and fails on any drift — see
+[`docs/api-parity.md`](docs/api-parity.md) for the contract and why a few debug-only
+symbols are excluded. After an intentional API change, run `./gradlew apiDump` and
+commit the regenerated dumps.
+
+Maintainers: cutting a Maven Central release is a two-step,
+stage-then-manually-release flow — see [`docs/RELEASING.md`](docs/RELEASING.md).
+
 ## Documentation
 
 | Doc | What's in it |
@@ -343,6 +383,8 @@ The buffer is an in-memory ring (default 300 events, `SharinganStore(capacity)` 
 | [docs/RECIPES.md](docs/RECIPES.md) | Integration recipes: MQTT clients, Kable, SwiftUI wrapper, Live Activity analog, shake-to-open |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the library is built: module layout, capture pipeline, UI structure |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Future enhancements, recorded but not scheduled |
+| [docs/api-parity.md](docs/api-parity.md) | Why the debug/release artifacts must stay signature-identical and how `checkApiParity` enforces it |
+| [docs/RELEASING.md](docs/RELEASING.md) | Stage-then-manually-release flow to Maven Central |
 
 ## License
 

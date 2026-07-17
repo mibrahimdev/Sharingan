@@ -23,13 +23,13 @@ push tag v<version>  ──▶  CI stages to Central Portal  ──▶  STOP (aw
 ## Step 1 — cut the release tag (triggers CI staging)
 
 1. Make sure `gradle/libs.versions.toml` → `sharingan` holds the version you
-   intend to release (e.g. `0.1.0`), and it is merged to `main`.
+   intend to release (`X.Y.Z` below), and it is merged to `main`.
 2. Tag and push:
 
    ```bash
    git checkout main && git pull
-   git tag v0.1.0          # must equal the catalog version, with a leading "v"
-   git push origin v0.1.0
+   git tag vX.Y.Z          # must equal the catalog version, with a leading "v"
+   git push origin vX.Y.Z
    ```
 
    The tag **must** equal the catalog version or the
@@ -78,7 +78,7 @@ CI no longer auto-creates the GitHub Release (it would otherwise announce a
 deployment is **Published**, cut the matching GitHub Release yourself:
 
 ```bash
-gh release create v0.1.0 --title v0.1.0 --generate-notes
+gh release create vX.Y.Z --title vX.Y.Z --generate-notes
 ```
 
 ## Dry-run / re-staging without cutting a tag
