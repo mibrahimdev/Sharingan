@@ -10,9 +10,13 @@ Sharingan is an on-device debug logger for KMP apps. It captures protocol traffi
 
 ```kotlin
 // build.gradle.kts
-debugImplementation("io.github.mibrahimdev:sharingan:0.1.1")
-releaseImplementation("io.github.mibrahimdev:sharingan-noop:0.1.1")
+dependencies {
+    debugImplementation("io.github.mibrahimdev:sharingan:0.1.1")
+    releaseImplementation("io.github.mibrahimdev:sharingan-noop:0.1.1")
+}
+```
 
+```kotlin
 // capture — one Ktor line
 HttpClient { install(SharinganKtor) }
 
@@ -181,7 +185,7 @@ configuration and your build settings decide which one links:
 </details>
 
 A pure-Swift app has no Ktor plugin, so capture your `URLSession` traffic
-manually — call `Sharingan.http.log(...)` from your networking layer (see
+manually — call `Sharingan.shared.http.log(...)` from your networking layer (see
 [Capturing traffic → HTTP](#http--automatic-ktor) for the manual-logging note and
 [AGENTS.md](AGENTS.md) for the full parameter list). Without it the viewer
 opens but stays empty. Heads-up: Kotlin default arguments don't bridge to
