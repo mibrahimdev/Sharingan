@@ -7,6 +7,6 @@ import app.cash.sqldelight.db.SqlDriver
  * database. Internal: persistence is a debug-only concern and must not leak
  * into the public API (or the no-op twin).
  */
-internal expect class DriverFactory {
+internal expect class DriverFactory() {
     fun create(): SqlDriver
 }

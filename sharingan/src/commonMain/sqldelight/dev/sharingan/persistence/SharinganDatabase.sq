@@ -33,3 +33,9 @@ SELECT * FROM session WHERE id = ?;
 
 selectEventsForSession:
 SELECT * FROM event WHERE session_id = ? ORDER BY timestamp ASC;
+
+selectAllSessions:
+SELECT * FROM session ORDER BY started_at ASC;
+
+selectAllEvents:
+SELECT * FROM event ORDER BY timestamp ASC;

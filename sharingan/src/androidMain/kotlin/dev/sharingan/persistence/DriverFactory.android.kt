@@ -4,7 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import dev.sharingan.internal.SharinganAndroid
 
-internal actual class DriverFactory {
+internal actual class DriverFactory actual constructor() {
     actual fun create(): SqlDriver {
         val context =
             SharinganAndroid.appContext
