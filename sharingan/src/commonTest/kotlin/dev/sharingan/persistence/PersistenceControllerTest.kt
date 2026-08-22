@@ -92,7 +92,6 @@ internal class PersistenceControllerTest {
         controller1.start()
         store1.record(event("http-1"))
         withTimeout(10_000) { done1.await() }
-        controller1.stop()
 
         val store2 = SharinganStore(capacity = 10)
         val controller2 = PersistenceController(store2, driver)
@@ -101,7 +100,6 @@ internal class PersistenceControllerTest {
         controller2.start()
         store2.record(event("http-1"))
         withTimeout(10_000) { done2.await() }
-        controller2.stop()
 
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
         assertEquals(2, rows.size)
@@ -109,5 +107,33 @@ internal class PersistenceControllerTest {
 
         val sessions = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllSessions().executeAsList()
         assertEquals(2, sessions.size)
+    }
+
+    @Test
+    fun `Given a bounded channel When filled beyond capacity Then oldest are dropped and newest survive`() = runBlocking {
+        val channel = newEventChannel(capacity = 4)
+        (1..10).map { event("e$it") }.forEach { channel.trySend(it) }
+        channel.close()
+
+        val received = mutableListOf<SharinganEvent>()
+        for (e in channel) received += e
+
+        assertEquals(listOf("e7", "e8", "e9", "e10"), received.map { it.id })
+    }
+
+    @Test
+    fun `Given buffered events When stopped Then the pending batch is drained before close`() = runBlocking {
+        val driver = createTestDriver()
+        val store = SharinganStore(capacity = 1_000)
+        val controller = PersistenceController(store, driver, batchSize = 100, flushIntervalMillis = 60_000)
+        val batches = mutableListOf<Int>()
+        controller.onBatchFlushed = { size -> batches += size }
+        controller.start()
+
+        repeat(30) { i -> store.record(event("e$i")) }
+
+        controller.stop()
+
+        assertEquals(30, batches.sum(), "stop() must flush the in-flight batch")
     }
 }
