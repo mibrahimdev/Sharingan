@@ -1,0 +1,35 @@
+CREATE TABLE session (
+    id TEXT NOT NULL PRIMARY KEY,
+    started_at INTEGER NOT NULL,
+    app_id TEXT,
+    build TEXT,
+    os TEXT,
+    device_model TEXT
+);
+
+CREATE TABLE event (
+    id TEXT NOT NULL PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
+    timestamp INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    is_failure INTEGER NOT NULL,
+    host_or_topic TEXT,
+    payload_json TEXT
+);
+
+CREATE INDEX event_session_id_index ON event(session_id);
+CREATE INDEX event_timestamp_index ON event(timestamp);
+
+insertSession:
+INSERT INTO session(id, started_at, app_id, build, os, device_model)
+VALUES (?, ?, ?, ?, ?, ?);
+
+insertEvent:
+INSERT INTO event(id, session_id, timestamp, type, is_failure, host_or_topic, payload_json)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectSession:
+SELECT * FROM session WHERE id = ?;
+
+selectEventsForSession:
+SELECT * FROM event WHERE session_id = ? ORDER BY timestamp ASC;

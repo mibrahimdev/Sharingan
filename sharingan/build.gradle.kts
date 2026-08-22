@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.sqldelight)
+    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.mavenPublish)
 }
 
@@ -15,6 +17,14 @@ plugins {
 // GitHub repo, so no domain ownership is required (design decision 1/1a).
 group = "io.github.mibrahimdev"
 version = libs.versions.sharingan.get()
+
+sqldelight {
+    databases {
+        create("SharinganDatabase") {
+            packageName.set("dev.sharingan.persistence")
+        }
+    }
+}
 
 kotlin {
     explicitApi()
@@ -51,6 +61,8 @@ kotlin {
             // The Ktor plugin ships in the core artifact (Chucker model) so the
             // release no-op swap stays a single dependency substitution.
             implementation(libs.ktor.client.core)
+            // Flight-recorder persistence (issue #27 / #49): DTO JSON codec.
+            implementation(libs.kotlinx.serialization.json)
 
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -65,6 +77,16 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation(libs.sqldelight.android.driver)
+        }
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native.driver)
+        }
+        androidUnitTest.dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
+        }
+        iosTest.dependencies {
+            implementation(libs.sqldelight.native.driver)
         }
         // On-device UI tests (JetBrains Compose Multiplatform test API, run as
         // Android instrumented tests): ./gradlew :sharingan:connectedDebugAndroidTest

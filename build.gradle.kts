@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
+    alias(libs.plugins.sqldelight) apply false
+    alias(libs.plugins.kotlinSerialization) apply false
     // Applied to the root project: BCV injects apiDump/apiCheck into every
     // subproject and guards the committed public-API dumps (issue #11).
     alias(libs.plugins.binaryCompatibilityValidator)
@@ -15,6 +17,13 @@ plugins {
 apiValidation {
     // The sample app is not a published library — nothing to protect.
     ignoredProjects += "composeApp"
+
+    // Flight-recorder persistence (issue #27/#49) is SQLDelight-generated code
+    // that the compiler emits `public` (SQLDelight offers no internal-generation
+    // option). It is a debug-only internal seam, not consumer API, so it is
+    // excluded from the guarded public surface. Wrapped behind `internal`
+    // DriverFactory/controller symbols; never mirrored in :sharingan-noop.
+    ignoredPackages += "dev.sharingan.persistence"
 
     // KMP: also dump/verify the Kotlin/Native (iOS) ABI, not just the JVM/Android
     // surface, so iosMain-only declarations (SharinganViewController,
@@ -65,11 +74,13 @@ tasks.register("checkApiParity") {
         // directly, so :sharingan-noop correctly omits them. Excluded from parity:
         //  - dev/sharingan/ui/**             : the in-app Compose viewer screens
         //  - dev/sharingan/internal/**       : init ContentProvider + notification receiver
+        //  - dev/sharingan/persistence/**    : SQLDelight-generated flight-recorder DB (public in bytecode only)
         //  - dev/sharingan/SharinganActivity : the Android viewer Activity
         //  - any ComposableSingletons$*      : Compose-compiler lambda synthetics
         fun isExcludedJvmClass(name: String): Boolean =
             name.startsWith("dev/sharingan/ui/") ||
                 name.startsWith("dev/sharingan/internal/") ||
+                name.startsWith("dev/sharingan/persistence/") ||
                 name == "dev/sharingan/SharinganActivity" ||
                 name.contains("ComposableSingletons\$")
 
@@ -120,12 +131,13 @@ tasks.register("checkApiParity") {
         //  - `$stableprop` / `$stableprop_getter`: the native equivalent of the JVM
         //    `$stable` field, present only in the Compose-carrying real module;
         //  - `dev.sharingan.ui/SharinganScreen`: the top-level UI composable (ui/**).
+        //  - `dev.sharingan.persistence/`: SQLDelight-generated flight-recorder DB (ui-adjacent internal seam).
         fun nativeContractEntries(klibFile: File): Set<String> {
             val entries = linkedSetOf<String>()
             for (raw in klibFile.readLines()) {
                 val t = raw.trim()
                 if (t.isEmpty() || t == "}" || t.startsWith("//")) continue
-                if ("\$stableprop" in raw || "dev.sharingan.ui/" in raw) continue
+                if ("\$stableprop" in raw || "dev.sharingan.ui/" in raw || "dev.sharingan.persistence/" in raw) continue
                 entries.add(t)
             }
             return entries
