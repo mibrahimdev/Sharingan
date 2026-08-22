@@ -6,7 +6,12 @@ a priority.
 
 ## Storage & persistence — "flight recorder" (v2 epic)
 
-**Status: needs a design session before any code — see [#27](https://github.com/mibrahimdev/Sharingan/issues/27).**
+**Status: designed and broken into slices — see the design doc
+[`superpowers/specs/2026-08-21-flight-recorder-persistence-design.md`](superpowers/specs/2026-08-21-flight-recorder-persistence-design.md)
+and the [#27](https://github.com/mibrahimdev/Sharingan/issues/27) discussion.
+Execution is the five slices #49–#53 (SQLDelight, hands-free auto-sessions,
+in-viewer history, retention, disk security); encryption at rest is
+intentionally deferred to a later additive epic. Start once 1.0 ships.**
 
 Today `SharinganStore` is an in-memory ring buffer (capacity 300); logs are lost
 on process death. The proposal is to persist captured events to a local on-device
