@@ -9,7 +9,8 @@ import dev.sharingan.SharinganStore
 import dev.sharingan.internal.currentTimeMillis
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.random.Random
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -165,8 +166,10 @@ private fun SharinganEvent.hostOrTopic(): String? = when (this) {
 internal fun newEventChannel(capacity: Int): Channel<SharinganEvent> =
     Channel(capacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-// A session id only needs to be unique within this device's database. A
-// timestamp plus a random component makes two process launches that begin in
-// the same millisecond (and two test controllers) effectively collision-free.
+// A session id only needs to be unique within this device's database, but it
+// must be collision-free even for two launches in the same millisecond (and two
+// test controllers) — a real UUID, not timestamp+Random which collide on
+// Kotlin/Native's Default random under rapid successive calls.
+@OptIn(ExperimentalUuidApi::class)
 private fun newSessionId(): String =
-    "session-${currentTimeMillis()}-${Random.nextLong().toULong().toString(16)}"
+    "session-${Uuid.random()}"
