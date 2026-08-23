@@ -94,6 +94,7 @@ internal class PersistenceControllerTest {
         controller1.start()
         store1.record(event("http-1"))
         withTimeout(10_000) { done1.await() }
+        controller1.stop()
 
         val store2 = SharinganStore(capacity = 10)
         val controller2 = PersistenceController(store2, driver)
@@ -102,6 +103,7 @@ internal class PersistenceControllerTest {
         controller2.start()
         store2.record(event("http-1"))
         withTimeout(10_000) { done2.await() }
+        controller2.stop()
 
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
         assertEquals(2, rows.size)
@@ -168,6 +170,6 @@ internal class PersistenceControllerTest {
         assertTrue(firstBatchSize < 10, "deadline flush should fire mid-stream, got a batch of $firstBatchSize")
         assertTrue(elapsed < 600, "expected flush within interval, took $elapsed ms")
 
-        controller.stop()
+        controller.close()
     }
 }

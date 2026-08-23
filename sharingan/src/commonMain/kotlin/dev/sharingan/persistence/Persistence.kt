@@ -18,6 +18,6 @@ internal object Persistence {
 
     fun start(store: SharinganStore = Sharingan.store) {
         if (!started.compareAndSet(false, true)) return
-        controller = PersistenceController(store, DriverFactory().create()).also { it.start() }
+        controller = PersistenceController(store).also { it.start() }
     }
 }

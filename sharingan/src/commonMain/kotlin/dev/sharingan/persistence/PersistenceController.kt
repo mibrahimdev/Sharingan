@@ -34,13 +34,24 @@ import kotlinx.serialization.json.Json
  * created lazily on the first flushed event of the process launch.
  */
 @OptIn(ExperimentalAtomicApi::class)
-internal class PersistenceController(
+internal class PersistenceController internal constructor(
     private val store: SharinganStore,
     private val driver: SqlDriver,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val batchSize: Int = DEFAULT_BATCH_SIZE,
     private val flushIntervalMillis: Long = DEFAULT_FLUSH_INTERVAL_MILLIS,
 ) {
+    internal constructor(
+        store: SharinganStore,
+        batchSize: Int = DEFAULT_BATCH_SIZE,
+        flushIntervalMillis: Long = DEFAULT_FLUSH_INTERVAL_MILLIS,
+    ) : this(
+        store = store,
+        driver = DriverFactory().create(),
+        batchSize = batchSize,
+        flushIntervalMillis = flushIntervalMillis,
+    )
+
     private val database = SharinganDatabase(driver)
 
     // DROP_OLDEST, not DROP_LATEST: a flight recorder must keep the crash-tail,
@@ -66,12 +77,20 @@ internal class PersistenceController(
         flusherJob = scope.launch { runFlusher() }
     }
 
-    /** Drains and flushes the pending events, then closes the driver. */
+    /**
+     * Drains and flushes the pending events, then stops the flusher.
+     * The driver stays open so other readers can keep using the database.
+     */
     suspend fun stop() {
         if (!started.compareAndSet(true, false)) return
         store.onRecord = null
         channel.close()
         flusherJob?.join()
+    }
+
+    /** Stops the flusher, cancels the scope, and closes the driver. */
+    suspend fun close() {
+        stop()
         scope.cancel()
         driver.close()
     }
