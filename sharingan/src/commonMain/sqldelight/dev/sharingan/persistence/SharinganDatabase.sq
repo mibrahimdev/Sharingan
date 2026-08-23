@@ -39,3 +39,6 @@ SELECT * FROM session ORDER BY started_at ASC;
 
 selectAllEvents:
 SELECT * FROM event ORDER BY timestamp ASC;
+
+deleteSession:
+DELETE FROM session WHERE id = ?;

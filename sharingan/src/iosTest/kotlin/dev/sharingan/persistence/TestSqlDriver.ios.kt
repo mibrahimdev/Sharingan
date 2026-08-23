@@ -10,5 +10,10 @@ internal actual fun createTestDriver(): SqlDriver =
     NativeSqliteDriver(
         schema = SharinganDatabase.Schema,
         name = "sharingan-test-${Uuid.random()}.db",
-        onConfiguration = { it.copy(inMemory = true) },
+        onConfiguration = {
+            it.copy(
+                inMemory = true,
+                extendedConfig = it.extendedConfig.copy(foreignKeyConstraints = true),
+            )
+        },
     )

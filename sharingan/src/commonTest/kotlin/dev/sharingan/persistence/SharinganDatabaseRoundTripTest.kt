@@ -45,4 +45,35 @@ internal class SharinganDatabaseRoundTripTest {
         assertEquals("api.example.com", event.host_or_topic)
         assertEquals("""{"method":"GET"}""", event.payload_json)
     }
+
+    @Test
+    fun `Given events for a session When the session is deleted Then its events cascade away`() {
+        val db = SharinganDatabase(createTestDriver())
+
+        db.sharinganDatabaseQueries.insertSession(
+            id = "session-1",
+            started_at = 1_700_000_000_000L,
+            app_id = null,
+            build = null,
+            os = null,
+            device_model = null,
+        )
+        repeat(3) { index ->
+            db.sharinganDatabaseQueries.insertEvent(
+                id = "event-$index",
+                session_id = "session-1",
+                timestamp = 1_700_000_001_000L + index,
+                type = "HTTP",
+                is_failure = 0L,
+                host_or_topic = "api.example.com",
+                payload_json = """{"n":$index}""",
+            )
+        }
+
+        assertEquals(3, db.sharinganDatabaseQueries.selectAllEvents().executeAsList().size)
+
+        db.sharinganDatabaseQueries.deleteSession("session-1")
+
+        assertEquals(emptyList(), db.sharinganDatabaseQueries.selectAllEvents().executeAsList())
+    }
 }
