@@ -66,7 +66,7 @@ jobs:
       # commonTest is executed by the Android debug unit-test task. A failing
       # test here blocks the PR.
       - name: Run JVM/common unit tests
-        run: ./gradlew :sharingan:testDebugUnitTest :sharingan-noop:testDebugUnitTest
+        run: ./gradlew :sharingan:testDebugUnitTest :sharingan-db:testDebugUnitTest :sharingan-noop:testDebugUnitTest
 
   # Full multiplatform build + iOS simulator unit tests on macOS — the only
   # host that can link the Kotlin/Native iOS frameworks. This job (a) runs
@@ -107,7 +107,7 @@ jobs:
       # default. If a runtime lacks the device the step fails fast (no silent
       # skip) — a deviceId follow-up, not a hidden gap.
       - name: Run iOS simulator unit tests
-        run: ./gradlew :sharingan:iosSimulatorArm64Test :sharingan-noop:iosSimulatorArm64Test
+        run: ./gradlew :sharingan:iosSimulatorArm64Test :sharingan-db:iosSimulatorArm64Test :sharingan-noop:iosSimulatorArm64Test
 
   # Android instrumented (connected) tests on a Linux-hosted emulator. This is
   # the only job that exercises the device suites — :sharingan's Compose UI

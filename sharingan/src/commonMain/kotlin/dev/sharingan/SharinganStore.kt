@@ -25,7 +25,7 @@ public class SharinganStore(
     /**
      * Internal persistence seam: invoked with each accepted event after the
      * CAS append. `null` unless the flight-recorder persistence is wired up
-     * (see `dev.sharingan.persistence.PersistenceController`). Internal — never
+     * (see `dev.sharingan.db.PersistenceController`). Internal — never
      * part of the public API, so :sharingan-noop mirrors nothing here.
      */
     internal var onRecord: ((SharinganEvent) -> Unit)? = null

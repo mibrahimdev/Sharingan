@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class SharinganStoreTest {
@@ -119,4 +120,16 @@ internal class SharinganStoreTest {
                 }
             assertEquals(expected, ids.toSet())
         }
+        assertEquals(expected, ids.toSet())
+    }
+
+    @Test
+    fun `When persistence is off Then record keeps its behavior and onRecord stays null`() {
+        val store = SharinganStore(capacity = 10)
+        assertNull(store.onRecord)
+        store.record(event("a"))
+        store.record(event("b"))
+        assertEquals(listOf("a", "b"), store.events.value.map { it.id })
+        assertNull(store.onRecord)
+    }
 }

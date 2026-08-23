@@ -28,6 +28,10 @@ apiValidation {
     // excluded from the guarded public surface. Wrapped behind `internal`
     // DriverFactory/controller symbols; never mirrored in :sharingan-noop.
     ignoredPackages += "dev.sharingan.persistence"
+    // `:sharingan-db` is a debug-only implementation detail of `:sharingan`.
+    // Its surface is SQLDelight-generated and changes on every schema edit in
+    // slices 3-5; no consumer codes against it, so it is not BCV-guarded.
+    ignoredProjects += "sharingan-db"
 
     // KMP: also dump/verify the Kotlin/Native (iOS) ABI, not just the JVM/Android
     // surface, so iosMain-only declarations (SharinganViewController,
@@ -78,13 +82,11 @@ tasks.register("checkApiParity") {
         // directly, so :sharingan-noop correctly omits them. Excluded from parity:
         //  - dev/sharingan/ui/**             : the in-app Compose viewer screens
         //  - dev/sharingan/internal/**       : init ContentProvider + notification receiver
-        //  - dev/sharingan/persistence/**    : SQLDelight-generated flight-recorder DB (public in bytecode only)
         //  - dev/sharingan/SharinganActivity : the Android viewer Activity
         //  - any ComposableSingletons$*      : Compose-compiler lambda synthetics
         fun isExcludedJvmClass(name: String): Boolean =
             name.startsWith("dev/sharingan/ui/") ||
                 name.startsWith("dev/sharingan/internal/") ||
-                name.startsWith("dev/sharingan/persistence/") ||
                 name == "dev/sharingan/SharinganActivity" ||
                 name.contains("ComposableSingletons\$")
 
@@ -135,13 +137,12 @@ tasks.register("checkApiParity") {
         //  - `$stableprop` / `$stableprop_getter`: the native equivalent of the JVM
         //    `$stable` field, present only in the Compose-carrying real module;
         //  - `dev.sharingan.ui/SharinganScreen`: the top-level UI composable (ui/**).
-        //  - `dev.sharingan.persistence/`: SQLDelight-generated flight-recorder DB (ui-adjacent internal seam).
         fun nativeContractEntries(klibFile: File): Set<String> {
             val entries = linkedSetOf<String>()
             for (raw in klibFile.readLines()) {
                 val t = raw.trim()
                 if (t.isEmpty() || t == "}" || t.startsWith("//")) continue
-                if ("\$stableprop" in raw || "dev.sharingan.ui/" in raw || "dev.sharingan.persistence/" in raw) continue
+                if ("\$stableprop" in raw || "dev.sharingan.ui/" in raw) continue
                 entries.add(t)
             }
             return entries

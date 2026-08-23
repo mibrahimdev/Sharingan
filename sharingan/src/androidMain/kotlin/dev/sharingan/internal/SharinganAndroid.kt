@@ -6,7 +6,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
-import dev.sharingan.persistence.Persistence
+import dev.sharingan.db.SharinganDbContext
 
 /**
  * Holds the application context Sharingan needs for the clipboard, the share
@@ -28,6 +28,7 @@ public class SharinganInitProvider : ContentProvider() {
     override fun onCreate(): Boolean {
         val appContext = context?.applicationContext ?: return true
         SharinganAndroid.appContext = appContext
+        SharinganDbContext.install(appContext)
         CaptureNotification.start(appContext)
         Persistence.start()
         return true

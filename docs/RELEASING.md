@@ -1,11 +1,12 @@
 # Releasing Sharingan
 
-Sharingan ships two artifacts to Maven Central under `io.github.mibrahimdev`:
+Sharingan ships three artifacts to Maven Central under `io.github.mibrahimdev`:
 
-| Coordinate                            | Module            |
-| ------------------------------------- | ----------------- |
-| `io.github.mibrahimdev:sharingan`     | `:sharingan`      |
-| `io.github.mibrahimdev:sharingan-noop`| `:sharingan-noop` |
+| Coordinate                             | Module            |
+| -------------------------------------- | ----------------- |
+| `io.github.mibrahimdev:sharingan`      | `:sharingan`      |
+| `io.github.mibrahimdev:sharingan-db`   | `:sharingan-db`   |
+| `io.github.mibrahimdev:sharingan-noop` | `:sharingan-noop` |
 
 Releases are **two steps by deliberate design**: CI *stages* a deployment to
 the Central Portal, then a human *verifies and releases* it. We do **not**
@@ -37,7 +38,7 @@ push tag v<version>  ──▶  CI stages to Central Portal  ──▶  STOP (aw
    (`scripts/check-version-tag.sh`).
 
 3. The `Publish to Maven Central` workflow runs `./gradlew publishToMavenCentral`.
-   This **uploads both modules to a new deployment on the Central Portal and
+   This **uploads all three modules to a new deployment on the Central Portal and
    stops** — nothing is public yet. The job's `Staged - next steps` summary
    links straight back to this checklist.
 
@@ -48,12 +49,13 @@ push tag v<version>  ──▶  CI stages to Central Portal  ──▶  STOP (aw
 2. Find the new deployment from the CI run. Confirm **all** of:
    - **Status** is `VALIDATED` (not `FAILED`). If it failed, expand it to read
      why — do **not** publish a failed deployment; fix and re-stage instead.
-   - **Both** components are present under group `io.github.mibrahimdev`:
-     - `io.github.mibrahimdev:sharingan:<version>`
-     - `io.github.mibrahimdev:sharingan-noop:<version>`
+    - **All three** components are present under group `io.github.mibrahimdev`:
+      - `io.github.mibrahimdev:sharingan:<version>`
+      - `io.github.mibrahimdev:sharingan-db:<version>`
+      - `io.github.mibrahimdev:sharingan-noop:<version>`
 
-     If only one module is there, something is wrong — drop the deployment and
-     re-stage. Never release a half-uploaded version.
+      If any module is missing, something is wrong — drop the deployment and
+      re-stage. Never release a half-uploaded version.
    - The **version** matches the tag (`<version>`, no stray `-SNAPSHOT`).
    - Each component carries its **`.pom`**, the main artifact, **`-sources`**
      and **`-javadoc`** jars, and a matching **`.asc` signature** for every

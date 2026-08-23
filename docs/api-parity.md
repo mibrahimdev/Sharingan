@@ -48,6 +48,18 @@ Kotlin/Native link, no Android or iOS SDK — so it runs in a couple of seconds.
 ./gradlew checkApiParity
 ```
 
+### What BCV itself excludes
+
+`apiCheck`/`apiDump` are also configured in the root `build.gradle.kts`. The
+following modules are intentionally **not** BCV-guarded, because they are not
+consumer-facing public API:
+
+- `:sample:composeApp` — the sample application, not a published library.
+- `:sharingan-db` — the on-device SQLDelight database is an implementation
+detail of `:sharingan`. Its generated surface changes with every schema edit in
+slices 3–5, and no consumer codes against it. It is published only as a
+required runtime dependency of `:sharingan`.
+
 In CI it runs as the `api-parity` job in
 [`.github/workflows/api-check.yml`](../.github/workflows/api-check.yml), on a cheap
 `ubuntu` runner (it needs no macOS host).
