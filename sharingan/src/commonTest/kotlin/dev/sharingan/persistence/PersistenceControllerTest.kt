@@ -3,7 +3,9 @@ package dev.sharingan.persistence
 import dev.sharingan.HttpEvent
 import dev.sharingan.SharinganEvent
 import dev.sharingan.SharinganStore
+import dev.sharingan.internal.currentTimeMillis
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
@@ -135,5 +137,37 @@ internal class PersistenceControllerTest {
         controller.stop()
 
         assertEquals(30, batches.sum(), "stop() must flush the in-flight batch")
+    }
+
+    @Test
+    fun `Given a slow steady stream When events arrive under the batch size Then a flush lands within the interval`() = runBlocking {
+        val driver = createTestDriver()
+        val store = SharinganStore(capacity = 10)
+        val controller = PersistenceController(store, driver, batchSize = 50, flushIntervalMillis = 250)
+
+        var firstFlushAt = 0L
+        var firstBatchSize = 0
+        val flushed = CompletableDeferred<Unit>()
+        controller.onBatchFlushed = { size ->
+            if (firstFlushAt == 0L) {
+                firstBatchSize = size
+                firstFlushAt = currentTimeMillis()
+                flushed.complete(Unit)
+            }
+        }
+        controller.start()
+
+        val startedAt = currentTimeMillis()
+        repeat(10) { i ->
+            store.record(event("e$i"))
+            delay(100)
+        }
+
+        withTimeout(10_000) { flushed.await() }
+        val elapsed = firstFlushAt - startedAt
+        assertTrue(firstBatchSize < 10, "deadline flush should fire mid-stream, got a batch of $firstBatchSize")
+        assertTrue(elapsed < 600, "expected flush within interval, took $elapsed ms")
+
+        controller.stop()
     }
 }

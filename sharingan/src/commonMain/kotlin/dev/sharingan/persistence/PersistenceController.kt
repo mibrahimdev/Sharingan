@@ -78,16 +78,20 @@ internal class PersistenceController(
 
     private suspend fun runFlusher() {
         val batch = mutableListOf<SharinganEvent>()
+        var deadline = 0L
         while (true) {
             val event = try {
                 if (batch.isEmpty()) channel.receive()
-                else withTimeoutOrNull(flushIntervalMillis) { channel.receive() }
+                // Non-positive timeout returns null immediately; that means the deadline has
+                // already passed and we should flush right away.
+                else withTimeoutOrNull(deadline - currentTimeMillis()) { channel.receive() }
             } catch (e: ClosedReceiveChannelException) {
                 break
             }
             if (event == null) {
-                flush(batch) // time-based
+                flush(batch) // deadline reached
             } else {
+                if (batch.isEmpty()) deadline = currentTimeMillis() + flushIntervalMillis
                 batch.add(event)
                 if (batch.size >= batchSize) flush(batch) // size-based
             }
