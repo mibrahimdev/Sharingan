@@ -94,6 +94,10 @@ public class PersistenceController<T : Any> private constructor(
     /**
      * Drains and flushes the pending events, then stops the flusher.
      * The driver stays open so other readers can keep using the database.
+     *
+     * WARNING: this does NOT detach the caller's `store.onRecord` seam. Events
+     * submitted after `stop()` are trySend'd to a closed channel and silently
+     * dropped. Full teardown (detaching the seam) is the caller's responsibility.
      */
     public suspend fun stop() {
         if (!started.compareAndSet(true, false)) return
@@ -101,7 +105,12 @@ public class PersistenceController<T : Any> private constructor(
         flusherJob?.join()
     }
 
-    /** Stops the flusher, cancels the scope, and closes the driver. */
+    /**
+     * Stops the flusher, cancels the scope, and closes the driver.
+     *
+     * NOTE: this also does not detach the caller's seam; do that before calling
+     * `close()` if you need to stop event submission.
+     */
     public suspend fun close() {
         stop()
         scope.cancel()
