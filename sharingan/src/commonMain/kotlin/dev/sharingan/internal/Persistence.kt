@@ -32,7 +32,7 @@ internal object Persistence {
     }
 }
 
-private val json = Json { encodeDefaults = true }
+internal val json = Json { encodeDefaults = true }
 
 internal fun toRow(event: SharinganEvent): EventRow = EventRow(
     rawId = event.id,
