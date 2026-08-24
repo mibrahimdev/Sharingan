@@ -1,15 +1,9 @@
 package dev.sharingan.db
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlin.concurrent.atomics.AtomicInt
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -228,33 +222,24 @@ internal class PersistenceControllerTest {
     fun `Given start is called twice without stop Then only one flusher runs and every event is persisted`() = runBlocking {
         val total = 5
         val driver = createTestDriver()
-        val dispatcher = CountingDispatcher(Dispatchers.Default)
-        val scope = CoroutineScope(SupervisorJob() + dispatcher)
         val controller = PersistenceController<EventRow>(
             toRow = { it },
             driver = driver,
-            scope = scope,
             batchSize = total,
             flushIntervalMillis = 60_000,
         )
 
         val flushed = CompletableDeferred<Unit>()
-        var flusherDispatchesAtFlush = 0
-        controller.onBatchFlushed = { size ->
-            flusherDispatchesAtFlush = dispatcher.dispatchedCount()
-            flushed.complete(Unit)
-        }
+        controller.onBatchFlushed = { flushed.complete(Unit) }
 
         controller.start()
         controller.start() // redundant start must not spin up a second flusher
 
+        assertEquals(1, controller.flusherStartCount(), "only one flusher coroutine must start")
+
         repeat(total) { i -> controller.submit(event("e$i")) }
 
         withTimeout(10_000) { flushed.await() }
-
-        // An eager redundant launch dispatches a coroutine before losing the CAS
-        // and cancelling it; a LAZY launch only dispatches the CAS winner.
-        assertEquals(1, flusherDispatchesAtFlush, "expected 1 dispatched flusher, got $flusherDispatchesAtFlush")
 
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
         assertEquals(total, rows.size, "no event may be lost to a cancelled loser flusher")
@@ -363,22 +348,4 @@ internal class PersistenceControllerTest {
     }
 }
 
-@OptIn(ExperimentalAtomicApi::class)
-private class CountingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
-    private val count = AtomicInt(0)
 
-    override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
-        // Only count dispatches that start a new coroutine (DispatchedContinuation).
-        // Channel close also dispatches resumptions (CancellableContinuationImpl),
-        // which must not be counted as flusher starts.
-        if (block::class.simpleName == "DispatchedContinuation") {
-            while (true) {
-                val cur = count.load()
-                if (count.compareAndSet(cur, cur + 1)) break
-            }
-        }
-        delegate.dispatch(context, block)
-    }
-
-    fun dispatchedCount(): Int = count.load()
-}

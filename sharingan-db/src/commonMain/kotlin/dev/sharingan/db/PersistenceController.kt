@@ -2,8 +2,10 @@ package dev.sharingan.db
 
 import app.cash.sqldelight.db.SqlDriver
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
@@ -96,6 +98,13 @@ public class PersistenceController<T : Any> private constructor(
     /** Test seam: invoked with the batch size after each committed transaction. */
     internal var onBatchFlushed: ((Int) -> Unit)? = null
 
+    // Counter incremented exactly when the flusher coroutine body begins.
+    // Internal test seam — not part of the public ABI.
+    private val flusherStarts = AtomicInt(0)
+
+    /** Internal test seam: number of flusher coroutines that actually started. */
+    internal fun flusherStartCount(): Int = flusherStarts.load()
+
     /**
      * Wires the seam and starts the flusher.
      *
@@ -105,7 +114,7 @@ public class PersistenceController<T : Any> private constructor(
      * [IllegalStateException].
      */
     public fun start() {
-        if (stopped.load()) throw IllegalStateException("PersistenceController is single-use; already stopped")
+        if (stopped.load()) error("PersistenceController is single-use; already stopped")
         // LAZY: the coroutine is only dispatched if this call wins the CAS.
         // An eager launch + cancel on the losing branch could prompt-cancel a
         // receive and drop an element from the channel.
@@ -134,8 +143,11 @@ public class PersistenceController<T : Any> private constructor(
      */
     public suspend fun stop() {
         stopped.store(true)
-        val job = flusherJob.exchange(null) ?: return
+        // Always close the channel first. A concurrent start() that won the CAS
+        // after we set stopped=true will start a flusher on the closed channel,
+        // which exits immediately; we must not leave it open.
         channel.close()
+        val job = flusherJob.exchange(null) ?: return
         job.join()
     }
 
@@ -152,6 +164,7 @@ public class PersistenceController<T : Any> private constructor(
     }
 
     private suspend fun runFlusher() {
+        flusherStarts.incrementAndFetch()
         val batch = mutableListOf<T>()
         var deadline = 0L
         while (true) {
