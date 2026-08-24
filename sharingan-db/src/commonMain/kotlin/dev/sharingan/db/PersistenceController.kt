@@ -1,7 +1,7 @@
 package dev.sharingan.db
 
 import app.cash.sqldelight.db.SqlDriver
-import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -69,9 +69,9 @@ public class PersistenceController<T : Any> private constructor(
     // so under backpressure the oldest events are evicted, never the newest.
     private val channel = newEventChannel<T>(CHANNEL_CAPACITY)
 
-    private val started = AtomicBoolean(false)
-
-    private var flusherJob: Job? = null
+    // Stored in an AtomicReference so a concurrent stop() cannot read a stale
+    // null and skip the join while a transaction is in flight.
+    private val flusherJob = AtomicReference<Job?>(null)
 
     // Only the flusher coroutine touches this. Memoized across flushes, but
     // reset if a batch's transaction rolls back so a half-written session row
@@ -83,8 +83,11 @@ public class PersistenceController<T : Any> private constructor(
 
     /** Wires the seam and starts the flusher. Idempotent. */
     public fun start() {
-        if (!started.compareAndSet(false, true)) return
-        flusherJob = scope.launch { runFlusher() }
+        val job = scope.launch { runFlusher() }
+        if (!flusherJob.compareAndSet(null, job)) {
+            // Already started (or stopped concurrently); drop the spare job.
+            job.cancel()
+        }
     }
 
     /** Submits [event] to the flusher. Non-blocking and allocation-free. */
@@ -101,9 +104,17 @@ public class PersistenceController<T : Any> private constructor(
      * dropped. Full teardown (detaching the seam) is the caller's responsibility.
      */
     public suspend fun stop() {
-        if (!started.compareAndSet(true, false)) return
+        val job = readAndClearFlusherJob() ?: return
         channel.close()
-        flusherJob?.join()
+        job.join()
+    }
+
+    private fun readAndClearFlusherJob(): Job? {
+        while (true) {
+            val job = flusherJob.load()
+            if (job == null) return null
+            if (flusherJob.compareAndSet(job, null)) return job
+        }
     }
 
     /**

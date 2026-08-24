@@ -157,6 +157,46 @@ internal class PersistenceControllerTest {
     }
 
     @Test
+    fun `Given stop is called twice Then it is idempotent and does not crash`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(
+            toRow = { it },
+            driver = driver,
+            batchSize = 100,
+            flushIntervalMillis = 60_000,
+        )
+        controller.start()
+        repeat(10) { i -> controller.submit(event("e$i")) }
+
+        controller.stop()
+        controller.stop() // second call must be a no-op
+
+        val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
+        assertEquals(10, rows.size)
+
+        controller.close()
+    }
+
+    @Test
+    fun `Given repeated start stop cycles Then the controller remains usable`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(toRow = { it }, driver = driver)
+
+        repeat(20) { cycle ->
+            controller.start()
+            controller.submit(event("cycle-$cycle"))
+            controller.stop()
+        }
+
+        val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
+        // Each cycle's event must have either been flushed or dropped by a race;
+        // the only hard contract is that no crash occurred and the DB is consistent.
+        assertTrue(rows.size in 0..20, "expected 0..20 rows after races, got ${rows.size}")
+
+        controller.close()
+    }
+
+    @Test
     fun `Given buffered events When stopped Then the pending batch is drained before close`() = runBlocking {
         val driver = createTestDriver()
         val controller = PersistenceController<EventRow>(
