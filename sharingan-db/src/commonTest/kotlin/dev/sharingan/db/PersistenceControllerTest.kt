@@ -179,6 +179,30 @@ internal class PersistenceControllerTest {
     }
 
     @Test
+    fun `Given events under the batch size When the deadline passes Then a deadline flush lands`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(
+            toRow = { it },
+            driver = driver,
+            batchSize = 50,
+            flushIntervalMillis = 250,
+        )
+        val flushed = CompletableDeferred<Unit>()
+        controller.onBatchFlushed = { flushed.complete(Unit) }
+        controller.start()
+
+        controller.submit(event("a"))
+        controller.submit(event("b"))
+
+        withTimeout(10_000) { flushed.await() }
+
+        val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
+        assertEquals(2, rows.size)
+
+        controller.close()
+    }
+
+    @Test
     fun `Given a slow steady stream When events arrive under the batch size Then a flush lands within the interval`() = runBlocking {
         val driver = createTestDriver()
         val controller = PersistenceController<EventRow>(

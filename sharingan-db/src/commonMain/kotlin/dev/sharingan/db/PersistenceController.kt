@@ -14,7 +14,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.selects.onTimeout
+import kotlinx.coroutines.selects.select
 
 /**
  * Write-behind persistence: drains events off the caller's seam into an
@@ -25,7 +26,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * one transaction per batch. The caller-supplied [toRow] mapping runs on the
  * flusher, never on the hot path.
  */
-@OptIn(ExperimentalAtomicApi::class)
+@OptIn(ExperimentalAtomicApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 public class PersistenceController<T : Any> private constructor(
     private val toRow: (T) -> EventRow,
     private val driver: SqlDriver,
@@ -121,13 +122,31 @@ public class PersistenceController<T : Any> private constructor(
         val batch = mutableListOf<T>()
         var deadline = 0L
         while (true) {
-            val event = try {
-                if (batch.isEmpty()) channel.receive()
-                // Non-positive timeout returns null immediately; the deadline has
-                // already passed and we should flush right away.
-                else withTimeoutOrNull(deadline - nowMillis()) { channel.receive() }
-            } catch (e: ClosedReceiveChannelException) {
-                break
+            val event = if (batch.isEmpty()) {
+                try {
+                    channel.receive()
+                } catch (e: ClosedReceiveChannelException) {
+                    break
+                }
+            } else {
+                // Use select+onReceiveCatching instead of withTimeoutOrNull so
+                // the receive and timeout are atomic; this prevents prompt
+                // cancellation from dropping an element that was already taken
+                // from the channel.
+                var closed = false
+                select<T?> {
+                    channel.onReceiveCatching { result ->
+                        if (result.isClosed) {
+                            closed = true
+                            null
+                        } else {
+                            result.getOrNull()
+                        }
+                    }
+                    // Non-positive timeout returns null immediately; the deadline
+                    // has already passed and we should flush right away.
+                    onTimeout(deadline - nowMillis()) { null }
+                }.also { if (closed) break }
             }
             if (event == null) {
                 flush(batch) // deadline reached
