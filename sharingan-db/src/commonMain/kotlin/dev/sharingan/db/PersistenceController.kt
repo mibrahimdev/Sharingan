@@ -1,6 +1,7 @@
 package dev.sharingan.db
 
 import app.cash.sqldelight.db.SqlDriver
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.ExperimentalUuidApi
@@ -13,6 +14,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
@@ -25,6 +27,10 @@ import kotlinx.coroutines.selects.select
  * [Dispatchers.Default] batches writes by size or time (whichever first) into
  * one transaction per batch. The caller-supplied [toRow] mapping runs on the
  * flusher, never on the hot path.
+ *
+ * The flusher uses `select` + `onTimeout` from `kotlinx.coroutines`'s
+ * [ExperimentalCoroutinesApi]. These are load-bearing for the published ABI:
+ * a coroutines version bump must be re-validated against the controller tests.
  */
 @OptIn(ExperimentalAtomicApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 public class PersistenceController<T : Any> private constructor(
@@ -77,6 +83,11 @@ public class PersistenceController<T : Any> private constructor(
     // null and skip the join while a transaction is in flight.
     private val flusherJob = AtomicReference<Job?>(null)
 
+    // Terminal flag: once stop() has been called the controller is single-use
+    // and start() must throw rather than launch a zombie flusher on a closed
+    // channel.
+    private val stopped = AtomicBoolean(false)
+
     // Only the flusher coroutine touches this. Memoized across flushes, but
     // reset if a batch's transaction rolls back so a half-written session row
     // is never referenced by a later batch.
@@ -85,13 +96,25 @@ public class PersistenceController<T : Any> private constructor(
     /** Test seam: invoked with the batch size after each committed transaction. */
     internal var onBatchFlushed: ((Int) -> Unit)? = null
 
-    /** Wires the seam and starts the flusher. Idempotent. */
+    /**
+     * Wires the seam and starts the flusher.
+     *
+     * Calling [start] more than once before [stop] is idempotent — only one
+     * flusher coroutine is ever dispatched. After [stop] has been called the
+     * controller is single-use and further [start] calls throw
+     * [IllegalStateException].
+     */
     public fun start() {
-        val job = scope.launch { runFlusher() }
-        if (!flusherJob.compareAndSet(null, job)) {
-            // Already started (or stopped concurrently); drop the spare job.
-            job.cancel()
+        if (stopped.load()) throw IllegalStateException("PersistenceController is single-use; already stopped")
+        // LAZY: the coroutine is only dispatched if this call wins the CAS.
+        // An eager launch + cancel on the losing branch could prompt-cancel a
+        // receive and drop an element from the channel.
+        val job = scope.launch(start = CoroutineStart.LAZY) { runFlusher() }
+        if (flusherJob.compareAndSet(null, job)) {
+            job.start()
         }
+        // Losing CAS: another start() (or a racing stop()) already owns the
+        // flusher slot. The spare LAZY job never runs and needs no cancel.
     }
 
     /** Submits [event] to the flusher. Non-blocking and allocation-free. */
@@ -103,22 +126,17 @@ public class PersistenceController<T : Any> private constructor(
      * Drains and flushes the pending events, then stops the flusher.
      * The driver stays open so other readers can keep using the database.
      *
+     * This controller is single-use: after [stop], [start] will throw.
+     *
      * WARNING: this does NOT detach the caller's `store.onRecord` seam. Events
      * submitted after `stop()` are trySend'd to a closed channel and silently
      * dropped. Full teardown (detaching the seam) is the caller's responsibility.
      */
     public suspend fun stop() {
-        val job = readAndClearFlusherJob() ?: return
+        stopped.store(true)
+        val job = flusherJob.exchange(null) ?: return
         channel.close()
         job.join()
-    }
-
-    private fun readAndClearFlusherJob(): Job? {
-        while (true) {
-            val job = flusherJob.load()
-            if (job == null) return null
-            if (flusherJob.compareAndSet(job, null)) return job
-        }
     }
 
     /**

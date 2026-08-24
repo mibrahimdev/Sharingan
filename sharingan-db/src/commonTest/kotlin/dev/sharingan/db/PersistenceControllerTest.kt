@@ -1,11 +1,18 @@
 package dev.sharingan.db
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 internal class PersistenceControllerTest {
@@ -218,20 +225,57 @@ internal class PersistenceControllerTest {
     }
 
     @Test
-    fun `Given repeated start stop cycles Then the controller remains usable`() = runBlocking {
+    fun `Given start is called twice without stop Then only one flusher runs and every event is persisted`() = runBlocking {
+        val total = 5
         val driver = createTestDriver()
-        val controller = PersistenceController<EventRow>(toRow = { it }, driver = driver)
+        val dispatcher = CountingDispatcher(Dispatchers.Default)
+        val scope = CoroutineScope(SupervisorJob() + dispatcher)
+        val controller = PersistenceController<EventRow>(
+            toRow = { it },
+            driver = driver,
+            scope = scope,
+            batchSize = total,
+            flushIntervalMillis = 60_000,
+        )
 
-        repeat(20) { cycle ->
-            controller.start()
-            controller.submit(event("cycle-$cycle"))
-            controller.stop()
+        val flushed = CompletableDeferred<Unit>()
+        var flusherDispatchesAtFlush = 0
+        controller.onBatchFlushed = { size ->
+            flusherDispatchesAtFlush = dispatcher.dispatchedCount()
+            flushed.complete(Unit)
         }
 
+        controller.start()
+        controller.start() // redundant start must not spin up a second flusher
+
+        repeat(total) { i -> controller.submit(event("e$i")) }
+
+        withTimeout(10_000) { flushed.await() }
+
+        // An eager redundant launch dispatches a coroutine before losing the CAS
+        // and cancelling it; a LAZY launch only dispatches the CAS winner.
+        assertEquals(1, flusherDispatchesAtFlush, "expected 1 dispatched flusher, got $flusherDispatchesAtFlush")
+
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
-        // Each cycle's event must have either been flushed or dropped by a race;
-        // the only hard contract is that no crash occurred and the DB is consistent.
-        assertTrue(rows.size in 0..20, "expected 0..20 rows after races, got ${rows.size}")
+        assertEquals(total, rows.size, "no event may be lost to a cancelled loser flusher")
+
+        val sessions = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllSessions().executeAsList()
+        assertEquals(1, sessions.size, "only one flusher/session must be created")
+
+        controller.close()
+    }
+
+    @Test
+    fun `Given stop has been called When start is called again Then it throws IllegalStateException`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(toRow = { it }, driver = driver)
+        controller.start()
+        controller.submit(event("a"))
+        controller.stop()
+
+        assertFailsWith<IllegalStateException> {
+            controller.start()
+        }
 
         controller.close()
     }
@@ -317,4 +361,24 @@ internal class PersistenceControllerTest {
 
         controller.close()
     }
+}
+
+@OptIn(ExperimentalAtomicApi::class)
+private class CountingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+    private val count = AtomicInt(0)
+
+    override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
+        // Only count dispatches that start a new coroutine (DispatchedContinuation).
+        // Channel close also dispatches resumptions (CancellableContinuationImpl),
+        // which must not be counted as flusher starts.
+        if (block::class.simpleName == "DispatchedContinuation") {
+            while (true) {
+                val cur = count.load()
+                if (count.compareAndSet(cur, cur + 1)) break
+            }
+        }
+        delegate.dispatch(context, block)
+    }
+
+    fun dispatchedCount(): Int = count.load()
 }
