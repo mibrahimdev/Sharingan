@@ -119,3 +119,13 @@ binary-compatibility-validator. The golden dumps are committed at
 
 - `./gradlew apiCheck` — fails if the public API drifts from the committed dumps. Runs on every PR (`.github/workflows/api-check.yml`, macOS so the iOS klib targets build).
 - `./gradlew apiDump` — regenerate the dumps after an *intentional* API change, then commit the updated `api/*.api` files in the same PR.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as GitHub issues (`mibrahimdev/Sharingan`); use the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
