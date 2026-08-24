@@ -46,6 +46,42 @@ internal class PersistenceControllerTest {
     }
 
     @Test
+    fun `Given a toRow mapper that throws on one event When flushed Then the flusher survives and other events persist`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(
+            toRow = { row ->
+                if (row.rawId == "boom") error("mapper failure")
+                row
+            },
+            driver = driver,
+            batchSize = 1,
+            flushIntervalMillis = 60_000,
+        )
+        controller.start()
+
+        fun row(id: String) = EventRow(
+            rawId = id,
+            timestampMillis = 0L,
+            type = "HTTP",
+            isFailure = false,
+            hostOrTopic = "api.example.com",
+            payloadJson = """{"id":"$id"}""",
+        )
+
+        controller.submit(row("before"))
+        controller.submit(row("boom"))
+        controller.submit(row("after"))
+
+        controller.stop()
+
+        val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
+        assertEquals(2, rows.size)
+        assertEquals(setOf("""{"id":"before"}""", """{"id":"after"}"""), rows.map { it.payload_json }.toSet())
+
+        controller.close()
+    }
+
+    @Test
     fun `Given many events When flushed Then they are written in batches not one per event`() = runBlocking {
         val total = 200
         val batchSize = 50

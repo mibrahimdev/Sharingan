@@ -144,10 +144,13 @@ public class PersistenceController<T : Any> private constructor(
         if (batch.isEmpty()) return
         val snapshot = batch.toList()
         batch.clear()
-        val rows = snapshot.map(toRow)
         val isNewSession = sessionId == null
         val session = sessionId ?: newSessionId()
         try {
+            // The caller-supplied mapper runs INSIDE the try so a thrown
+            // exception is treated like a failed transaction: drop the batch
+            // and keep the flusher alive.
+            val rows = snapshot.map(toRow)
             database.transaction {
                 if (isNewSession) insertSession(session)
                 rows.forEach { persist(it, session) }
