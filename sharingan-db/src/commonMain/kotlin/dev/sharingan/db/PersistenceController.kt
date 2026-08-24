@@ -34,6 +34,7 @@ public class PersistenceController<T : Any> private constructor(
     private val scope: CoroutineScope,
     private val batchSize: Int,
     private val flushIntervalMillis: Long,
+    channelCapacity: Int,
 ) {
     public constructor(
         toRow: (T) -> EventRow,
@@ -46,6 +47,7 @@ public class PersistenceController<T : Any> private constructor(
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         batchSize = batchSize,
         flushIntervalMillis = flushIntervalMillis,
+        channelCapacity = CHANNEL_CAPACITY,
     )
 
     internal constructor(
@@ -54,6 +56,7 @@ public class PersistenceController<T : Any> private constructor(
         scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         batchSize: Int = DEFAULT_BATCH_SIZE,
         flushIntervalMillis: Long = DEFAULT_FLUSH_INTERVAL_MILLIS,
+        channelCapacity: Int = CHANNEL_CAPACITY,
     ) : this(
         toRow = toRow,
         driver = driver,
@@ -61,13 +64,14 @@ public class PersistenceController<T : Any> private constructor(
         scope = scope,
         batchSize = batchSize,
         flushIntervalMillis = flushIntervalMillis,
+        channelCapacity = channelCapacity,
     )
 
     private val database = SharinganDatabase(driver)
 
     // DROP_OLDEST, not DROP_LATEST: a flight recorder must keep the crash-tail,
     // so under backpressure the oldest events are evicted, never the newest.
-    private val channel = newEventChannel<T>(CHANNEL_CAPACITY)
+    private val channel = newEventChannel<T>(channelCapacity)
 
     // Stored in an AtomicReference so a concurrent stop() cannot read a stale
     // null and skip the join while a transaction is in flight.

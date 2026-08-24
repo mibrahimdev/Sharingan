@@ -20,7 +20,7 @@ internal class PersistenceControllerTest {
     )
 
     @Test
-    fun `Given a burst larger than the ring buffer When flushed Then every event is persisted`() = runBlocking {
+    fun `Given a burst within the channel capacity When flushed Then every event is persisted`() = runBlocking {
         val total = 500
         val driver = createTestDriver()
         val controller = PersistenceController<EventRow>(toRow = { it }, driver = driver)
@@ -41,6 +41,46 @@ internal class PersistenceControllerTest {
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
         assertEquals(total, rows.size, "all $total events should reach the DB")
         assertEquals(total, rows.map { it.id }.toSet().size, "persisted event ids must be unique")
+
+        controller.close()
+    }
+
+    @Test
+    fun `Given a burst beyond the channel capacity When flushed Then the newest events survive`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(
+            toRow = { it },
+            driver = driver,
+            batchSize = 4,
+            flushIntervalMillis = 60_000,
+            channelCapacity = 4,
+        )
+
+        fun row(id: String) = EventRow(
+            rawId = id,
+            timestampMillis = 0L,
+            type = "HTTP",
+            isFailure = false,
+            hostOrTopic = "api.example.com",
+            payloadJson = """{"id":"$id"}""",
+        )
+
+        // Submit before start() so the flusher cannot drain the channel while
+        // the burst is being written; DROP_OLDEST must retain the newest 4.
+        repeat(10) { i -> controller.submit(row("e$i")) }
+
+        val done = CompletableDeferred<Unit>()
+        controller.onBatchFlushed = { done.complete(Unit) }
+        controller.start()
+
+        withTimeout(10_000) { done.await() }
+
+        val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
+        assertEquals(4, rows.size, "channel should keep only the newest 4 events")
+        assertEquals(
+            setOf("""{"id":"e6"}""", """{"id":"e7"}""", """{"id":"e8"}""", """{"id":"e9"}"""),
+            rows.map { it.payload_json }.toSet(),
+        )
 
         controller.close()
     }
