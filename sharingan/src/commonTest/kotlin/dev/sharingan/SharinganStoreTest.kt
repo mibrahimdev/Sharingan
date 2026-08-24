@@ -132,4 +132,44 @@ internal class SharinganStoreTest {
         assertEquals(listOf("a", "b"), store.events.value.map { it.id })
         assertNull(store.onRecord)
     }
+
+    @Test
+    fun `Given an onRecord seam When events are recorded Then the seam receives each event`() {
+        val store = SharinganStore(capacity = 10)
+        val forwarded = mutableListOf<String>()
+        store.onRecord = { forwarded += it.id }
+
+        store.record(event("a"))
+        store.record(event("b"))
+
+        assertEquals(listOf("a", "b"), store.events.value.map { it.id })
+        assertEquals(listOf("a", "b"), forwarded)
+    }
+
+    @Test
+    fun `Given an onRecord seam When recording is paused Then the seam receives nothing`() {
+        val store = SharinganStore(capacity = 10)
+        val forwarded = mutableListOf<String>()
+        store.onRecord = { forwarded += it.id }
+        store.setRecording(false)
+
+        store.record(event("a"))
+        store.record(event("b"))
+
+        assertTrue(store.events.value.isEmpty())
+        assertTrue(forwarded.isEmpty())
+    }
+
+    @Test
+    fun `Given an onRecord seam When the buffer evicts an event Then the evicted event was still forwarded`() {
+        val store = SharinganStore(capacity = 2)
+        val forwarded = mutableListOf<String>()
+        store.onRecord = { forwarded += it.id }
+
+        listOf("a", "b", "c").forEach { store.record(event(it)) }
+
+        assertEquals(listOf("b", "c"), store.events.value.map { it.id })
+        assertEquals(listOf("a", "b", "c"), forwarded)
+    }
+
 }
