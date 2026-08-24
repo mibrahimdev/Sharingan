@@ -235,11 +235,11 @@ internal class PersistenceControllerTest {
         controller.start()
         controller.start() // redundant start must not spin up a second flusher
 
-        assertEquals(1, controller.flusherStartCount(), "only one flusher coroutine must start")
-
         repeat(total) { i -> controller.submit(event("e$i")) }
 
         withTimeout(10_000) { flushed.await() }
+
+        assertEquals(1, controller.flusherStartCount(), "only one flusher coroutine must start")
 
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
         assertEquals(total, rows.size, "no event may be lost to a cancelled loser flusher")
