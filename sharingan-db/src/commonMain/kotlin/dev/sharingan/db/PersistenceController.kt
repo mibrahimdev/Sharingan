@@ -25,14 +25,12 @@ import kotlinx.coroutines.selects.select
  * Write-behind persistence: drains events off the caller's seam into an
  * on-device SQLDelight database so logs survive process death.
  *
- * [submit] is a single non-blocking [Channel.trySend]; the flusher coroutine on
- * [Dispatchers.Default] batches writes by size or time (whichever first) into
- * one transaction per batch. The caller-supplied [toRow] mapping runs on the
- * flusher, never on the hot path.
+ * [submit] is a non-blocking [Channel.trySend]; a flusher coroutine batches
+ * writes by size or time into one transaction per batch, running [toRow] off
+ * the hot path.
  *
- * The flusher uses `select` + `onTimeout` from `kotlinx.coroutines`'s
- * [ExperimentalCoroutinesApi]. These are load-bearing for the published ABI:
- * a coroutines version bump must be re-validated against the controller tests.
+ * Uses `select`/`onTimeout` ([ExperimentalCoroutinesApi]) — re-validate against
+ * the controller tests on a coroutines bump.
  */
 @OptIn(ExperimentalAtomicApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 public class PersistenceController<T : Any> private constructor(
@@ -76,54 +74,35 @@ public class PersistenceController<T : Any> private constructor(
     )
 
     private val database = SharinganDatabase(driver)
-
-    // DROP_OLDEST, not DROP_LATEST: a flight recorder must keep the crash-tail,
-    // so under backpressure the oldest events are evicted, never the newest.
     private val channel = newEventChannel<T>(channelCapacity)
 
-    // Stored in an AtomicReference so a concurrent stop() cannot read a stale
-    // null and skip the join while a transaction is in flight.
+    // AtomicReference so a racing stop() can't read a stale null and skip the join.
     private val flusherJob = AtomicReference<Job?>(null)
 
-    // Terminal flag: once stop() has been called the controller is single-use
-    // and start() must throw rather than launch a zombie flusher on a closed
-    // channel.
+    // Terminal flag; the controller is single-use once stopped.
     private val stopped = AtomicBoolean(false)
 
-    // Only the flusher coroutine touches this. Memoized across flushes, but
-    // reset if a batch's transaction rolls back so a half-written session row
-    // is never referenced by a later batch.
+    // Flusher-thread only; reset on rollback so a rolled-back session row isn't reused.
     private var sessionId: String? = null
 
-    /** Test seam: invoked with the batch size after each committed transaction. */
+    /** Test seam: batch size after each committed transaction. */
     internal var onBatchFlushed: ((Int) -> Unit)? = null
 
-    // Counter incremented exactly when the flusher coroutine body begins.
-    // Internal test seam — not part of the public ABI.
     private val flusherStarts = AtomicInt(0)
 
-    /** Internal test seam: number of flusher coroutines that actually started. */
+    /** Test seam: flusher coroutines that actually started. */
     internal fun flusherStartCount(): Int = flusherStarts.load()
 
     /**
-     * Wires the seam and starts the flusher.
-     *
-     * Calling [start] more than once before [stop] is idempotent — only one
-     * flusher coroutine is ever dispatched. After [stop] has been called the
-     * controller is single-use and further [start] calls throw
-     * [IllegalStateException].
+     * Wires the seam and starts the flusher. Idempotent before [stop]; after
+     * [stop] the controller is single-use and [start] throws.
      */
     public fun start() {
         if (stopped.load()) error("PersistenceController is single-use; already stopped")
-        // LAZY: the coroutine is only dispatched if this call wins the CAS.
-        // An eager launch + cancel on the losing branch could prompt-cancel a
-        // receive and drop an element from the channel.
+        // LAZY + start only on the CAS win: an eager launch would need a cancel()
+        // on the losing branch, which could prompt-cancel a receive and drop an event.
         val job = scope.launch(start = CoroutineStart.LAZY) { runFlusher() }
-        if (flusherJob.compareAndSet(null, job)) {
-            job.start()
-        }
-        // Losing CAS: another start() (or a racing stop()) already owns the
-        // flusher slot. The spare LAZY job never runs and needs no cancel.
+        if (flusherJob.compareAndSet(null, job)) job.start()
     }
 
     /** Submits [event] to the flusher. Non-blocking and allocation-free. */
@@ -132,31 +111,23 @@ public class PersistenceController<T : Any> private constructor(
     }
 
     /**
-     * Drains and flushes the pending events, then stops the flusher.
-     * The driver stays open so other readers can keep using the database.
+     * Drains pending events, then stops the flusher. The driver stays open.
+     * Single-use: after [stop], [start] throws.
      *
-     * This controller is single-use: after [stop], [start] will throw.
-     *
-     * WARNING: this does NOT detach the caller's `store.onRecord` seam. Events
-     * submitted after `stop()` are trySend'd to a closed channel and silently
-     * dropped. Full teardown (detaching the seam) is the caller's responsibility.
+     * WARNING: does NOT detach the caller's `store.onRecord` seam — events
+     * submitted after [stop] hit a closed channel and are dropped. Detaching the
+     * seam is the caller's responsibility.
      */
     public suspend fun stop() {
         stopped.store(true)
-        // Always close the channel first. A concurrent start() that won the CAS
-        // after we set stopped=true will start a flusher on the closed channel,
-        // which exits immediately; we must not leave it open.
+        // Close first: a start() that won the CAS after stopped=true then lands
+        // on a closed channel and exits at once.
         channel.close()
         val job = flusherJob.exchange(null) ?: return
         job.join()
     }
 
-    /**
-     * Stops the flusher, cancels the scope, and closes the driver.
-     *
-     * NOTE: this also does not detach the caller's seam; do that before calling
-     * `close()` if you need to stop event submission.
-     */
+    /** Stops the flusher, cancels the scope, and closes the driver. Also does not detach the seam. */
     public suspend fun close() {
         stop()
         scope.cancel()
@@ -175,10 +146,8 @@ public class PersistenceController<T : Any> private constructor(
                     break
                 }
             } else {
-                // Use select+onReceiveCatching instead of withTimeoutOrNull so
-                // the receive and timeout are atomic; this prevents prompt
-                // cancellation from dropping an element that was already taken
-                // from the channel.
+                // Atomic receive-or-timeout; withTimeoutOrNull could prompt-cancel
+                // an already-taken element and lose it.
                 var closed = false
                 select<T?> {
                     channel.onReceiveCatching { result ->
@@ -189,8 +158,6 @@ public class PersistenceController<T : Any> private constructor(
                             result.getOrNull()
                         }
                     }
-                    // Non-positive timeout returns null immediately; the deadline
-                    // has already passed and we should flush right away.
                     onTimeout(deadline - nowMillis()) { null }
                 }.also { if (closed) break }
             }
@@ -212,9 +179,7 @@ public class PersistenceController<T : Any> private constructor(
         val isNewSession = sessionId == null
         val session = sessionId ?: newSessionId()
         try {
-            // The caller-supplied mapper runs INSIDE the try so a thrown
-            // exception is treated like a failed transaction: drop the batch
-            // and keep the flusher alive.
+            // Map inside the try so a throwing mapper drops the batch, not the flusher.
             val rows = snapshot.map(toRow)
             database.transaction {
                 if (isNewSession) insertSession(session)
@@ -223,9 +188,7 @@ public class PersistenceController<T : Any> private constructor(
             if (isNewSession) sessionId = session
             onBatchFlushed?.invoke(rows.size)
         } catch (t: Throwable) {
-            // One failing batch must not kill the flusher. Drop it and keep
-            // draining; re-derive the session on the next batch in case its row
-            // was rolled back with this transaction.
+            // Drop the batch, keep draining; reset session in case its row rolled back.
             if (isNewSession) sessionId = null
             println("Sharingan persistence: dropped a batch of ${snapshot.size} events ($t)")
         }
@@ -261,14 +224,10 @@ public class PersistenceController<T : Any> private constructor(
     }
 }
 
-// DROP_OLDEST: a flight recorder must keep the crash-tail, so when the channel
-// overflows the oldest events are evicted, never the newest.
+// DROP_OLDEST keeps the crash-tail: on overflow the oldest events are evicted, not the newest.
 internal fun <T> newEventChannel(capacity: Int): Channel<T> =
     Channel(capacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-// A session id only needs to be unique within this device's database, but it
-// must be collision-free even for two launches in the same millisecond (and two
-// test controllers) — a real UUID, not timestamp+Random which collide on
-// Kotlin/Native's Default random under rapid successive calls.
+// UUID, not timestamp+Random: the latter collides on Kotlin/Native under rapid calls.
 @OptIn(ExperimentalUuidApi::class)
 private fun newSessionId(): String = "session-${Uuid.random()}"

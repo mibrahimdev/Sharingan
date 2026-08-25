@@ -8,12 +8,11 @@ import kotlinx.serialization.Serializable
 
 /**
  * Serializable mirror of [SharinganEvent], stored as the `event.payload_json`
- * blob. A SEPARATE internal type rather than `@Serializable` on the public
- * events — the #15 ABI freeze forbids touching `HttpEvent`/`MqttEvent`/`BleEvent`.
+ * blob. A separate internal type because the #15 ABI freeze forbids adding
+ * `@Serializable` to the public events.
  *
- * Encode-only this slice: [fromEvent] maps a public event to its DTO. The
- * `toEvent()` decoder lands in slice 3 (in-viewer history), which is why every
- * public field has a mirrored counterpart and enum values are carried by name.
+ * Encode-only this slice ([fromEvent]); the decoder lands in slice 3, so every
+ * field is mirrored and enums are carried by name.
  */
 @Serializable
 internal sealed interface EventDto {
