@@ -105,14 +105,13 @@ public class PersistenceController<T : Any> private constructor(
         if (flusherJob.compareAndSet(null, job)) job.start()
     }
 
-    /** Submits [event] to the flusher. Non-blocking and allocation-free. */
+    /** Submits [event] to the flusher. Never blocks the caller. */
     public fun submit(event: T) {
         channel.trySend(event)
     }
 
     /**
      * Drains pending events, then stops the flusher. The driver stays open.
-     * Single-use: after [stop], [start] throws.
      *
      * WARNING: does NOT detach the caller's `store.onRecord` seam — events
      * submitted after [stop] hit a closed channel and are dropped. Detaching the
@@ -127,7 +126,7 @@ public class PersistenceController<T : Any> private constructor(
         job.join()
     }
 
-    /** Stops the flusher, cancels the scope, and closes the driver. Also does not detach the seam. */
+    /** Closes the driver only if this controller opened it. Like [stop], does not detach the seam. */
     public suspend fun close() {
         stop()
         scope.cancel()
@@ -162,11 +161,11 @@ public class PersistenceController<T : Any> private constructor(
                 }.also { if (closed) break }
             }
             if (event == null) {
-                flush(batch) // deadline reached
+                flush(batch)
             } else {
                 if (batch.isEmpty()) deadline = nowMillis() + flushIntervalMillis
                 batch.add(event)
-                if (batch.size >= batchSize) flush(batch) // size-based
+                if (batch.size >= batchSize) flush(batch)
             }
         }
         flush(batch) // drain the in-flight batch after the channel is closed
@@ -188,7 +187,7 @@ public class PersistenceController<T : Any> private constructor(
             if (isNewSession) sessionId = session
             onBatchFlushed?.invoke(rows.size)
         } catch (t: Throwable) {
-            // Drop the batch, keep draining; reset session in case its row rolled back.
+            // Reset the session in case its row rolled back with this transaction.
             if (isNewSession) sessionId = null
             println("Sharingan persistence: dropped a batch of ${snapshot.size} events ($t)")
         }
@@ -224,7 +223,7 @@ public class PersistenceController<T : Any> private constructor(
     }
 }
 
-// DROP_OLDEST keeps the crash-tail: on overflow the oldest events are evicted, not the newest.
+// DROP_OLDEST keeps the crash-tail — the newest events matter most here.
 internal fun <T> newEventChannel(capacity: Int): Channel<T> =
     Channel(capacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 

@@ -13,10 +13,8 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.json.Json
 
 /**
- * Hands-free persistence bootstrap. Starts the [PersistenceController] over the
- * shared [Sharingan.store] exactly once per process. Internal — the public
- * `Sharingan.configure()` entry point (and its no-op mirror) lands in a later
- * slice; until then Android's manifest-merged ContentProvider calls [start].
+ * Starts persistence once per process. The only caller is Android's
+ * manifest-merged ContentProvider — there is no Kotlin call site to grep.
  */
 @OptIn(ExperimentalAtomicApi::class)
 internal object Persistence {

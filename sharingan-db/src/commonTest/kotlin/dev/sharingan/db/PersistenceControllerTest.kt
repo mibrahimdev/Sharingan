@@ -210,7 +210,7 @@ internal class PersistenceControllerTest {
         repeat(10) { i -> controller.submit(event("e$i")) }
 
         controller.stop()
-        controller.stop() // second call must be a no-op
+        controller.stop()
 
         val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
         assertEquals(10, rows.size)
@@ -233,7 +233,7 @@ internal class PersistenceControllerTest {
         controller.onBatchFlushed = { flushed.complete(Unit) }
 
         controller.start()
-        controller.start() // redundant start must not spin up a second flusher
+        controller.start()
 
         repeat(total) { i -> controller.submit(event("e$i")) }
 

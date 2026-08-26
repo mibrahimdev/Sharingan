@@ -11,8 +11,8 @@ import kotlinx.serialization.Serializable
  * blob. A separate internal type because the #15 ABI freeze forbids adding
  * `@Serializable` to the public events.
  *
- * Encode-only this slice ([fromEvent]); the decoder lands in slice 3, so every
- * field is mirrored and enums are carried by name.
+ * Encode-only ([fromEvent]). Every field is mirrored and enums carried by name
+ * so a decoder can be added without a format change.
  */
 @Serializable
 internal sealed interface EventDto {
