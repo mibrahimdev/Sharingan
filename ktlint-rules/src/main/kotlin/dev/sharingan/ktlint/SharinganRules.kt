@@ -101,6 +101,9 @@ class NoNarrationCommentRule :
 
 class SharinganRuleSetProvider :
     RuleSetProviderV3(RuleSetId(SHARINGAN_RULE_SET_ID)) {
+    // getRuleProviders is deprecated in ktlint's API but remains the abstract
+    // member in 1.5.x — there is no replacement to migrate to on this version.
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun getRuleProviders(): Set<RuleProvider> =
         setOf(
             RuleProvider { TodoWithoutIssueRule() },
