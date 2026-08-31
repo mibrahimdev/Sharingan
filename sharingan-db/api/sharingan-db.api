@@ -45,6 +45,7 @@ public final class dev/sharingan/db/EventRow {
 public final class dev/sharingan/db/PersistenceController {
 	public fun <init> (Lkotlin/jvm/functions/Function1;IJ)V
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun clear ()V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun start ()V
 	public final fun stop (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -84,6 +85,7 @@ public final class dev/sharingan/db/SharinganDatabase$Companion {
 
 public final class dev/sharingan/db/SharinganDatabaseQueries : app/cash/sqldelight/TransacterImpl {
 	public fun <init> (Lapp/cash/sqldelight/db/SqlDriver;)V
+	public final fun deleteAllEvents ()V
 	public final fun deleteSession (Ljava/lang/String;)V
 	public final fun insertEvent (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;)V
 	public final fun insertSession (Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
