@@ -8,8 +8,7 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
-// Maven coordinate only — Kotlin packages and the Android namespace stay
-// `dev.sharingan(.noop)`. See :sharingan for the rationale (design decision 1a).
+// Maven coordinate only — Kotlin packages/namespace stay dev.sharingan(.noop); see :sharingan (design decision 1a).
 group = "io.github.mibrahimdev"
 version = libs.versions.sharingan.get()
 
@@ -35,8 +34,7 @@ kotlin {
     sourceSets {
         all { languageSettings.optIn("kotlin.experimental.ExperimentalObjCName") }
         commonMain.dependencies {
-            // Mirrors the real artifact's API surface (StateFlow, Ktor plugin
-            // types) with no Compose/UI payload — release builds carry ~nothing.
+            // Mirrors the real API surface (StateFlow, Ktor plugin types) with no Compose/UI payload.
             api(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.core)
         }
@@ -68,9 +66,7 @@ android {
 
 mavenPublishing {
     publishToMavenCentral()
-    // signAllPublications() is the default for real publishes (local + CI). The
-    // `-PlocalPublishNoSign` flag disables it for offline POM verification where
-    // no GPG key is available (real signing is provisioned in a separate issue).
+    // signAllPublications() is the default; -PlocalPublishNoSign disables it for offline POM verification (no GPG key).
     if (!providers.gradleProperty("localPublishNoSign").isPresent) {
         signAllPublications()
     }

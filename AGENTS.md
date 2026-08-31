@@ -129,7 +129,8 @@ Code comments are for *why*, never *what*. Default to **no comment**; write code
 - DO NOT leave TODO/FIXME without an issue reference (`// TODO(#NN):`).
 - Comments ARE justified for: a non-obvious invariant or trade-off, a workaround with its bug/issue link, a pointer to the primary source (spec/ADR), or a public-API contract the signature can't express — prefer KDoc for that.
 - If a comment only survives because the code is hard to read, fix the code instead.
-- ktlint enforces the mechanics (wrapping, `//` over `/* */`); this policy is enforced by review.
+- NO multi-line comments: a `//` run of two or more adjacent lines, or a `/* ... */` block spanning lines, is flagged by ktlint (`sharingan-comments:no-multi-line-comment`). If it doesn't fit on one line, shorten it — or if it is documentation, write KDoc (`/** ... */`), which is exempt.
+- ktlint enforces the mechanics (wrapping, `//` over `/* */`, no multi-line comments); this policy is enforced by review.
 
 ## Agent skills
 

@@ -75,9 +75,7 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
     @Composable
     protected abstract fun Body(event: E)
 
-    // ── untyped bridges ──────────────────────────────────────────
-    // descriptorOf(event) returns the descriptor matching the event's
-    // concrete type, so this cast cannot fail at runtime.
+    // Untyped bridges: descriptorOf(event) always matches the event's concrete type, so this cast cannot fail.
 
     @Suppress("UNCHECKED_CAST")
     private fun typed(event: SharinganEvent): E = event as E

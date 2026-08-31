@@ -60,9 +60,7 @@ class LoggerLocaleLeakTest {
             "ar",
             localeManager.applicationLocales.toLanguageTags(),
         )
-        // The above only confirms system-server state. The process-local JVM
-        // default is what SharinganActivity snapshots/restores, and it updates
-        // separately — wait for it too, so we don't snapshot a stale value.
+        // System-server state (above) updates before the process-local JVM default — wait for both.
         val jvmDeadline = System.currentTimeMillis() + 2_000
         while (LocaleList.getDefault()[0].language != "ar" &&
             System.currentTimeMillis() < jvmDeadline
@@ -92,16 +90,13 @@ class LoggerLocaleLeakTest {
             }
         }
 
-        // Sanity: system-server per-app locale is untouched. This lives in
-        // system_server, not our process, so the process-local fix can't corrupt
-        // it — it passes regardless of the bug and just guards the test setup.
+        // Sanity: per-app locale lives in system_server, not our process — the process-local fix can't corrupt it.
         assertEquals(
             "system per-app locale changed unexpectedly (test setup sanity)",
             "ar",
             localeManager.applicationLocales.toLanguageTags(),
         )
-        // The REAL leak assertions: the process-global JVM defaults the buggy
-        // activity flipped to English must be back to the host's Arabic.
+        // The real leak assertions: JVM-default locales the buggy activity flipped to English must be back to Arabic.
         assertEquals("Locale.getDefault() leaked", "ar", Locale.getDefault().language)
         assertEquals("LocaleList.getDefault() leaked", "ar", LocaleList.getDefault()[0].language)
     }

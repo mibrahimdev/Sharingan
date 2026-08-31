@@ -97,15 +97,10 @@ internal class SharinganStoreTest {
             val perProducer = 500
             val total = producers * perProducer
 
-            // Capacity holds every event, so a lost compare-and-set update surfaces
-            // as a missing event rather than as legitimate ring-buffer eviction —
-            // making this a direct check of the lock-free `record` path under load.
+            // Capacity == total so a lost CAS update surfaces as a missing event, not legit eviction — direct check of record().
             val store = SharinganStore(capacity = total)
 
-            // Each producer records on a real background thread (Dispatchers.Default
-            // is multi-threaded on both the JVM and Kotlin/Native), so the producers
-            // genuinely contend on the same MutableStateFlow rather than interleaving
-            // cooperatively on a single test thread.
+            // Dispatchers.Default is multi-threaded on JVM and K/N, so producers genuinely contend on the store.
             coroutineScope {
                 repeat(producers) { producer ->
                     launch(Dispatchers.Default) {

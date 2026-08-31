@@ -30,9 +30,7 @@ import dev.sharingan.SharinganEvent
 import dev.sharingan.SharinganStore
 import kotlinx.coroutines.delay
 
-// Sheet hosts (iOS page sheet) already sit below the status bar, so the top
-// safe-area inset would be paid twice (#42). Full-screen/embedded hosts still
-// need it. internal -> not part of the checked public API surface.
+// Sheet hosts sit below the status bar, so the top inset would be paid twice (#42); full-screen hosts still need it.
 internal val LocalStripTopInset = staticCompositionLocalOf { false }
 
 internal fun sharinganContentInsets(
@@ -162,9 +160,7 @@ internal fun SharinganScreenContent(
 ) {
     val colors = LocalSharinganColors.current
     PlatformBackHandler(enabled = selectedEvent != null, onBack = onBack)
-    // The logger is a locale-neutral surface — always LTR, on every platform
-    // (including iOS) and in Studio previews, regardless of the host's layout
-    // direction (issue #38).
+    // The logger is a locale-neutral surface — always LTR, on every platform and preview (#38).
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Scaffold(
             modifier = modifier,

@@ -29,9 +29,7 @@ import kotlin.native.ObjCName
 @OptIn(ExperimentalObjCName::class)
 public fun SharinganViewController(): UIViewController = composeVc(stripTopInset = false)
 
-// internal — presentSharingan() uses this; strips the phantom top inset (#42):
-// a page sheet already sits below the status bar, but CMP 1.11 reads insets
-// from the UIWindow, so safeDrawing would pay the top inset twice.
+// internal — used by presentSharingan(); strips the phantom sheet top inset (#42): CMP 1.11 reads insets from the UIWindow.
 internal fun sharinganSheetViewController(): UIViewController = composeVc(stripTopInset = true)
 
 private fun composeVc(stripTopInset: Boolean): UIViewController =
@@ -68,8 +66,7 @@ public fun presentSharingan(animated: Boolean = true) {
                 .firstOrNull { it.keyWindow }
                 ?.rootViewController ?: return@dispatch_async
         val top = topmostViewController(root)
-        // Guard: UIKit silently swallows a present() while another
-        // presentation/dismissal is already in flight; make the no-op explicit.
+        // Guard: UIKit silently swallows a present() while another presentation/dismissal is in flight; make it explicit.
         if (top.isBeingDismissed() || top.isBeingPresented()) return@dispatch_async
         top.presentViewController(sharinganSheetViewController(), animated = animated, completion = null)
     }

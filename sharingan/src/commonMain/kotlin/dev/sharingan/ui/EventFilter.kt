@@ -17,9 +17,7 @@ internal data class FilterChipSpec(
     val label: String,
 )
 
-// Per-protocol knowledge (chips, matching, search haystacks) lives in the
-// ProtocolDescriptors; these functions are the stable seam callers and
-// tests go through.
+// Per-protocol knowledge (chips, matching, haystacks) lives in the ProtocolDescriptors; these are the stable seam.
 
 internal fun protocolOf(event: SharinganEvent): Protocol = descriptorOf(event).protocol
 

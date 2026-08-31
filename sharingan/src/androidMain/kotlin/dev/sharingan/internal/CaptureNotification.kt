@@ -103,8 +103,7 @@ internal object CaptureNotification {
         try {
             manager.notify(NOTIFICATION_ID, builder.build())
         } catch (_: Exception) {
-            // Missing POST_NOTIFICATIONS or any notification failure must never
-            // crash the host app; capture continues silently.
+            // Notification failures (incl. missing POST_NOTIFICATIONS) must never crash the host app; capture continues.
         }
     }
 

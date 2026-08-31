@@ -1,6 +1,4 @@
-// sharingan-noop — API mirror of dev.sharingan:sharingan with empty
-// implementations. Depend on this artifact in release builds: every call
-// compiles identically, nothing is captured, no UI ships.
+// API mirror of :sharingan with empty implementations — depend on this in release builds.
 package dev.sharingan
 
 import kotlinx.coroutines.flow.MutableStateFlow

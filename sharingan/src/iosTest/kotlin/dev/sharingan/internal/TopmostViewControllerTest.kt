@@ -9,8 +9,7 @@ class TopmostViewControllerTest {
     fun `When root has no presentations Then root is the topmost`() {
         val root = UIViewController(nibName = null, bundle = null)
 
-        // K/N wraps each ObjC return in a fresh Kotlin peer; use ObjC isEqual
-        // (pointer equality for NSObject) instead of Kotlin reference identity.
+        // K/N wraps ObjC returns in fresh Kotlin peers; compare via ObjC isEqual (pointer equality), not identity.
         assertTrue(root.isEqual(topmostViewController(root)))
     }
 
