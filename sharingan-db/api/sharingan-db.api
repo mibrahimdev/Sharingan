@@ -1,0 +1,104 @@
+public final class dev/sharingan/db/Event {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()J
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()J
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;)Ldev/sharingan/db/Event;
+	public static synthetic fun copy$default (Ldev/sharingan/db/Event;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/sharingan/db/Event;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHost_or_topic ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getPayload_json ()Ljava/lang/String;
+	public final fun getSession_id ()Ljava/lang/String;
+	public final fun getTimestamp ()J
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun is_failure ()J
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/sharingan/db/EventRow {
+	public fun <init> (Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;Ljava/lang/String;)Ldev/sharingan/db/EventRow;
+	public static synthetic fun copy$default (Ldev/sharingan/db/EventRow;Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/sharingan/db/EventRow;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHostOrTopic ()Ljava/lang/String;
+	public final fun getPayloadJson ()Ljava/lang/String;
+	public final fun getRawId ()Ljava/lang/String;
+	public final fun getTimestampMillis ()J
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isFailure ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/sharingan/db/PersistenceController {
+	public fun <init> (Lkotlin/jvm/functions/Function1;IJ)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun start ()V
+	public final fun stop (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun submit (Ljava/lang/Object;)V
+}
+
+public final class dev/sharingan/db/Session {
+	public fun <init> (Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ldev/sharingan/db/Session;
+	public static synthetic fun copy$default (Ldev/sharingan/db/Session;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/sharingan/db/Session;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApp_id ()Ljava/lang/String;
+	public final fun getBuild ()Ljava/lang/String;
+	public final fun getDevice_model ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getOs ()Ljava/lang/String;
+	public final fun getStarted_at ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class dev/sharingan/db/SharinganDatabase : app/cash/sqldelight/Transacter {
+	public static final field Companion Ldev/sharingan/db/SharinganDatabase$Companion;
+	public abstract fun getSharinganDatabaseQueries ()Ldev/sharingan/db/SharinganDatabaseQueries;
+}
+
+public final class dev/sharingan/db/SharinganDatabase$Companion {
+	public final fun getSchema ()Lapp/cash/sqldelight/db/SqlSchema;
+	public final fun invoke (Lapp/cash/sqldelight/db/SqlDriver;)Ldev/sharingan/db/SharinganDatabase;
+}
+
+public final class dev/sharingan/db/SharinganDatabaseQueries : app/cash/sqldelight/TransacterImpl {
+	public fun <init> (Lapp/cash/sqldelight/db/SqlDriver;)V
+	public final fun deleteSession (Ljava/lang/String;)V
+	public final fun insertEvent (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;)V
+	public final fun insertSession (Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun selectAllEvents ()Lapp/cash/sqldelight/Query;
+	public final fun selectAllEvents (Lkotlin/jvm/functions/Function7;)Lapp/cash/sqldelight/Query;
+	public final fun selectAllSessions ()Lapp/cash/sqldelight/Query;
+	public final fun selectAllSessions (Lkotlin/jvm/functions/Function6;)Lapp/cash/sqldelight/Query;
+	public final fun selectEventsForSession (Ljava/lang/String;)Lapp/cash/sqldelight/Query;
+	public final fun selectEventsForSession (Ljava/lang/String;Lkotlin/jvm/functions/Function7;)Lapp/cash/sqldelight/Query;
+	public final fun selectSession (Ljava/lang/String;)Lapp/cash/sqldelight/Query;
+	public final fun selectSession (Ljava/lang/String;Lkotlin/jvm/functions/Function6;)Lapp/cash/sqldelight/Query;
+}
+
+public final class dev/sharingan/db/SharinganDbContext {
+	public static final field INSTANCE Ldev/sharingan/db/SharinganDbContext;
+	public final fun install (Landroid/content/Context;)V
+}
+

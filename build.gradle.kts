@@ -22,16 +22,7 @@ apiValidation {
     // Custom ktlint ruleset (AGENTS.md comments policy) — internal tooling.
     ignoredProjects += "ktlint-rules"
 
-    // Flight-recorder persistence (issue #27/#49) is SQLDelight-generated code
-    // that the compiler emits `public` (SQLDelight offers no internal-generation
-    // option). It is a debug-only internal seam, not consumer API, so it is
-    // excluded from the guarded public surface. Wrapped behind `internal`
-    // DriverFactory/controller symbols; never mirrored in :sharingan-noop.
-    ignoredPackages += "dev.sharingan.persistence"
-    // `:sharingan-db` is a debug-only implementation detail of `:sharingan`.
-    // Its surface is SQLDelight-generated and changes on every schema edit in
-    // slices 3-5; no consumer codes against it, so it is not BCV-guarded.
-    ignoredProjects += "sharingan-db"
+    // `:sharingan-db` ships to Maven Central as a dependency of `:sharingan`, so its ABI is guarded like any published module.
 
     // KMP: also dump/verify the Kotlin/Native (iOS) ABI, not just the JVM/Android
     // surface, so iosMain-only declarations (SharinganViewController,
