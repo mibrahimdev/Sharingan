@@ -19,6 +19,9 @@ apiValidation {
     // The sample app is not a published library — nothing to protect.
     ignoredProjects += "composeApp"
 
+    // Custom ktlint ruleset (AGENTS.md comments policy) — internal tooling.
+    ignoredProjects += "ktlint-rules"
+
     // Flight-recorder persistence (issue #27/#49) is SQLDelight-generated code
     // that the compiler emits `public` (SQLDelight offers no internal-generation
     // option). It is a debug-only internal seam, not consumer API, so it is
@@ -207,3 +210,25 @@ tasks.register("checkApiParity") {
 
 // Make the standard `check` lifecycle run the parity gate locally when present.
 tasks.matching { it.name == "check" }.configureEach { dependsOn("checkApiParity") }
+
+// ---------------------------------------------------------------------------
+// Custom ktlint ruleset (issue tracker: AGENTS.md "Comments policy").
+// Every project that applies the ktlint plugin also loads the local
+// `:ktlint-rules` ruleset, so `ktlintCheck` enforces the comments policy in
+// addition to the standard style rules. The ruleset jar ships no runtime
+// deps; ktlint provides its own classes at load time.
+// ---------------------------------------------------------------------------
+subprojects {
+    plugins.withId("org.jlleitschuh.gradle.ktlint") {
+        // Generated code (SQLDelight etc.) lives under build/generated and
+        // does not follow our style — never lint it.
+        configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+            filter {
+                exclude { it.file.invariantSeparatorsPath.contains("/build/generated/") }
+            }
+        }
+        dependencies {
+            add("ktlintRuleset", rootProject.project(":ktlint-rules"))
+        }
+    }
+}
