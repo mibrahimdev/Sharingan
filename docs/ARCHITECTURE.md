@@ -7,7 +7,7 @@ Companion docs: [README.md](../README.md) (user-facing), [AGENTS.md](../AGENTS.m
 
 ## 1. System overview
 
-Sharingan is an on-device debug logger for Kotlin Multiplatform (Android API 24+, iOS arm64 + simulator arm64). It captures HTTP, MQTT and BLE traffic into an in-memory ring buffer, renders a Compose Multiplatform log browser, and exports events as agent-friendly Markdown / cURL / JSON / digest text. Nothing is ever persisted.
+Sharingan is an on-device debug logger for Kotlin Multiplatform (Android API 24+, iOS arm64 + simulator arm64). It captures HTTP, MQTT and BLE traffic into an in-memory ring buffer, renders a Compose Multiplatform log browser, and exports events as agent-friendly Markdown / cURL / JSON / digest text. Events live in an in-memory ring buffer (default 300) that is also mirrored to an on-device SQLite flight recorder via a write-behind seam; persistence is on by default in debug, and request/response bodies are never written to disk.
 
 ### Module map
 
@@ -219,9 +219,9 @@ For **WebSocket capture** specifically: Ktor's `WebSockets` plugin offers no equ
 
 The design explored three densities — **Terminal / Comfortable / Badged** — and only Terminal shipped (`TerminalRow` in [ui/HomeScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/HomeScreen.kt); its doc comment names it "the design's default 'Terminal' density"). To add a variant: new `ComfortableRow`/`BadgedRow` composable beside `TerminalRow` consuming the same `EventPresentation`, a density value in `HomeUiState`, and a row-style picker in `HomeHeader`. `EventPresentation` already carries everything (`sub`, `sizeLabel`, tints) the richer variants need.
 
-### 5.4 Persist events
+### 5.4 Flight recorder (persistence)
 
-Today the buffer is deliberately memory-only. If persistence is ever wanted: keep `SharinganStore` as the hot interface and add an optional sink observing `store.events` (the pattern `CaptureNotification.start()` already uses); never make persistence the source of truth. Mind: redaction already happened at capture, but bodies may still hold PII — persisting changes the security posture, opt-in only.
+The in-memory ring buffer stays the source of truth. Each accepted Event is also mirrored to an on-device SQLite database by a write-behind seam: `SharinganStore.onRecord` (internal callback, invoked after the ring-buffer CAS append) → `PersistenceController` ([sharingan-db](../sharingan-db), SQLDelight). Persistence ships ON by default in debug. The Flight Recorder is a post-mortem log, never queried back into the UI and never the source of truth; one session row groups the Events of each process lifetime (a Run). Redaction applies before disk, and request/response bodies are never written to disk — persisting bodies would change the security posture and is deliberately out of scope.
 
 ### 5.5 Sample iosApp Xcode project
 

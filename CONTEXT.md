@@ -18,16 +18,29 @@ The single home for everything Sharingan knows about one Protocol: its filter ch
 _Avoid_: handler, strategy, adapter (reserved for things satisfying an interface at a seam)
 
 **Capture**:
-The act of recording an Event into the Store, via a Logger or the Ktor plugin. Header redaction happens at capture — secrets never enter the Store.
+The act of recording an Event into the Store, via a Logger or the Ktor plugin. Header redaction happens at capture — secrets never enter the Store, and redaction applies before disk too.
+
 _Avoid_: logging, tracking, interception
+
+**Flight Recorder**:
+The on-disk SQLite mirror of the Store, written via the Write-Behind Seam. Memory stays the source of truth; the Flight Recorder is a post-mortem log, not a database to query. Request/response bodies are never written to disk.
+_Avoid_: database, cache
 
 **Logger**:
 A per-Protocol capture entry point (`Sharingan.http`, `Sharingan.mqtt`, `Sharingan.ble`). Client-agnostic: host apps wire their own MQTT/BLE libraries into it.
 _Avoid_: tracker, recorder
 
+**Run**:
+One process lifetime — the Flight Recorder groups all Events captured in a process under a single session row.
+_Avoid_: session (reserved for the v2 epic)
+
 **Store**:
-The in-memory ring buffer of Events (default 300). Memory-only by design — nothing is ever written to disk; process death clears it.
+The in-memory ring buffer of Events (default 300). The source of truth while the process lives; each Event is mirrored to the Flight Recorder via the Write-Behind Seam. Process death clears the ring buffer, not the Flight Recorder.
 _Avoid_: database, cache, repository, buffer (alone)
+
+**Write-Behind Seam**:
+The internal seam (`SharinganStore.onRecord` → `PersistenceController`) that mirrors each accepted Event to the Flight Recorder after the ring-buffer append. It observes Capture, never blocks it.
+_Avoid_: listener, hook
 
 **Capture Notification**:
 The Android sticky notification showing per-Protocol counters, a three-event Ticker when expanded, and Pause/Resume. Silent, updated in place, and must never crash the host app.
