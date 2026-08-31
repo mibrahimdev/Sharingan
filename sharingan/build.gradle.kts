@@ -49,8 +49,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             // Flight-recorder persistence (issue #27 / #49): DTO JSON codec.
             implementation(libs.kotlinx.serialization.json)
-            // On-device SQLDelight database; implementation dependency so its
-            // generated public types are not exported to consumers.
+            // On-device SQLDelight database; implementation-scoped so its generated types are not exported to consumers.
             implementation(project(":sharingan-db"))
 
             implementation(compose.runtime)

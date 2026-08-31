@@ -1,10 +1,10 @@
 package dev.sharingan
 
-import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.concurrent.Volatile
 
 /**
  * In-memory ring buffer of captured [SharinganEvent]s.

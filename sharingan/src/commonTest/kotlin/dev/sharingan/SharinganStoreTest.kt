@@ -182,5 +182,4 @@ internal class SharinganStoreTest {
         assertEquals(listOf("b", "c"), store.events.value.map { it.id })
         assertEquals(listOf("a", "b", "c"), forwarded)
     }
-
 }

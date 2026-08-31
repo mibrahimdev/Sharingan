@@ -11,18 +11,18 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class PersistenceToRowTest {
-
     @Test
     fun `Given an HTTP event with bodies When it becomes a row Then the bodies are not persisted`() {
-        val event = HttpEvent(
-            id = "http-1",
-            timestampMillis = 1_700_000_000_000L,
-            method = "POST",
-            url = "https://api.example.com/v1/users",
-            statusCode = 201,
-            requestBody = """{"name":"Ada"}""",
-            responseBody = """{"id":1}""",
-        )
+        val event =
+            HttpEvent(
+                id = "http-1",
+                timestampMillis = 1_700_000_000_000L,
+                method = "POST",
+                url = "https://api.example.com/v1/users",
+                statusCode = 201,
+                requestBody = """{"name":"Ada"}""",
+                responseBody = """{"id":1}""",
+            )
 
         val dto = json.decodeFromString(EventDto.serializer(), toRow(event).payloadJson)
 
@@ -34,13 +34,14 @@ internal class PersistenceToRowTest {
 
     @Test
     fun `Given an MQTT event with a payload When it becomes a row Then the payload is not persisted`() {
-        val event = MqttEvent(
-            id = "mqtt-1",
-            timestampMillis = 1_700_000_000_000L,
-            direction = MqttDirection.PUBLISH,
-            topic = "devices/001/status",
-            payload = """{"online":true}""",
-        )
+        val event =
+            MqttEvent(
+                id = "mqtt-1",
+                timestampMillis = 1_700_000_000_000L,
+                direction = MqttDirection.PUBLISH,
+                topic = "devices/001/status",
+                payload = """{"online":true}""",
+            )
 
         val dto = json.decodeFromString(EventDto.serializer(), toRow(event).payloadJson)
 
@@ -51,13 +52,14 @@ internal class PersistenceToRowTest {
 
     @Test
     fun `Given a BLE event with a payload When it becomes a row Then the payload is not persisted`() {
-        val event = BleEvent(
-            id = "ble-1",
-            timestampMillis = 1_700_000_000_000L,
-            operation = BleOperation.READ,
-            device = "HR-Monitor-A1",
-            payload = "{\"bpm\":72}",
-        )
+        val event =
+            BleEvent(
+                id = "ble-1",
+                timestampMillis = 1_700_000_000_000L,
+                operation = BleOperation.READ,
+                device = "HR-Monitor-A1",
+                payload = "{\"bpm\":72}",
+            )
 
         val dto = json.decodeFromString(EventDto.serializer(), toRow(event).payloadJson)
 

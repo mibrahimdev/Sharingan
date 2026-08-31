@@ -70,7 +70,13 @@ internal class SharinganDatabaseRoundTripTest {
             )
         }
 
-        assertEquals(3, db.sharinganDatabaseQueries.selectAllEvents().executeAsList().size)
+        assertEquals(
+            3,
+            db.sharinganDatabaseQueries
+                .selectAllEvents()
+                .executeAsList()
+                .size,
+        )
 
         db.sharinganDatabaseQueries.deleteSession("session-1")
 

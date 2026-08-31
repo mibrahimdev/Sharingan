@@ -8,9 +8,9 @@ import dev.sharingan.SharinganEvent
 import dev.sharingan.SharinganStore
 import dev.sharingan.db.EventRow
 import dev.sharingan.db.PersistenceController
+import kotlinx.serialization.json.Json
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlinx.serialization.json.Json
 
 /**
  * Starts persistence once per process. The only caller is Android's
@@ -32,9 +32,7 @@ internal object Persistence {
     fun start(store: SharinganStore = Sharingan.store) {
         if (!started.compareAndSet(false, true)) return
         val controller = PersistenceController(::toRow)
-        // Wire the seams BEFORE the flusher starts: by the time an event can be
-        // accepted, the sink is complete. start() is lazy, but the ordering
-        // dependency should be encoded, not implied.
+        // Seams before flusher: start() is lazy so the old order worked by luck; this encodes the dependency.
         store.onRecord = { event -> controller.submit(event) }
         store.onClear = { controller.clear() }
         this.store = store
@@ -56,32 +54,34 @@ internal object Persistence {
 
 internal val json = Json { encodeDefaults = true }
 
-// Bodies stay in memory only — the flight-recorder design defaults to
-// persistBodies = false. EventDto keeps the fields so a later slice can add
-// the opt-in flag on this path.
-internal fun toRow(event: SharinganEvent): EventRow = EventRow(
-    rawId = event.id,
-    timestampMillis = event.timestampMillis,
-    type = event.typeName(),
-    isFailure = event.isFailure,
-    hostOrTopic = event.hostOrTopic(),
-    payloadJson = json.encodeToString(EventDto.serializer(), EventDto.fromEvent(event).withoutBodies()),
-)
+// Bodies stay off disk (design default persistBodies = false); EventDto keeps the fields for the slice-5 opt-in.
+internal fun toRow(event: SharinganEvent): EventRow =
+    EventRow(
+        rawId = event.id,
+        timestampMillis = event.timestampMillis,
+        type = event.typeName(),
+        isFailure = event.isFailure,
+        hostOrTopic = event.hostOrTopic(),
+        payloadJson = json.encodeToString(EventDto.serializer(), EventDto.fromEvent(event).withoutBodies()),
+    )
 
-private fun EventDto.withoutBodies(): EventDto = when (this) {
-    is HttpDto -> copy(requestBody = null, responseBody = null)
-    is MqttDto -> copy(payload = null)
-    is BleDto -> copy(payload = null)
-}
+private fun EventDto.withoutBodies(): EventDto =
+    when (this) {
+        is HttpDto -> copy(requestBody = null, responseBody = null)
+        is MqttDto -> copy(payload = null)
+        is BleDto -> copy(payload = null)
+    }
 
-private fun SharinganEvent.typeName(): String = when (this) {
-    is HttpEvent -> "HTTP"
-    is MqttEvent -> "MQTT"
-    is BleEvent -> "BLE"
-}
+private fun SharinganEvent.typeName(): String =
+    when (this) {
+        is HttpEvent -> "HTTP"
+        is MqttEvent -> "MQTT"
+        is BleEvent -> "BLE"
+    }
 
-private fun SharinganEvent.hostOrTopic(): String? = when (this) {
-    is HttpEvent -> host
-    is MqttEvent -> topic
-    is BleEvent -> device
-}
+private fun SharinganEvent.hostOrTopic(): String? =
+    when (this) {
+        is HttpEvent -> host
+        is MqttEvent -> topic
+        is BleEvent -> device
+    }

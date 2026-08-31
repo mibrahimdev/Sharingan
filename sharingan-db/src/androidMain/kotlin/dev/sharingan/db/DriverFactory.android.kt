@@ -6,8 +6,9 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 
 internal actual class DriverFactory actual constructor() {
     actual fun create(): SqlDriver {
-        val context = SharinganDbContext.appContext
-            ?: error("Sharingan application context is unavailable; the manifest ContentProvider must initialize it first")
+        val context =
+            SharinganDbContext.appContext
+                ?: error("Sharingan application context is unavailable; the manifest ContentProvider must initialize it first")
         return AndroidSqliteDriver(
             schema = SharinganDatabase.Schema,
             context = context,

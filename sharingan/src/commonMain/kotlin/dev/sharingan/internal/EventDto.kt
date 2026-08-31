@@ -21,54 +21,64 @@ internal sealed interface EventDto {
     val error: String?
 
     companion object {
-        fun fromEvent(event: SharinganEvent): EventDto = when (event) {
-            is HttpEvent -> HttpDto(
-                id = event.id,
-                timestampMillis = event.timestampMillis,
-                method = event.method,
-                url = event.url,
-                statusCode = event.statusCode,
-                durationMillis = event.durationMillis,
-                requestHeaders = event.requestHeaders.map { (name, value) -> HeaderDto(name, value) },
-                responseHeaders = event.responseHeaders.map { (name, value) -> HeaderDto(name, value) },
-                requestBody = event.requestBody,
-                responseBody = event.responseBody,
-                contentType = event.contentType,
-                responseSizeBytes = event.responseSizeBytes,
-                timing = event.timing.map { TimingPhaseDto(it.label, it.millis) },
-                error = event.error,
-            )
-            is MqttEvent -> MqttDto(
-                id = event.id,
-                timestampMillis = event.timestampMillis,
-                direction = event.direction.name,
-                topic = event.topic,
-                qos = event.qos,
-                retained = event.retained,
-                payload = event.payload,
-                payloadSizeBytes = event.payloadSizeBytes,
-                error = event.error,
-            )
-            is BleEvent -> BleDto(
-                id = event.id,
-                timestampMillis = event.timestampMillis,
-                operation = event.operation.name,
-                device = event.device,
-                characteristic = event.characteristic,
-                uuid = event.uuid,
-                payload = event.payload,
-                sizeBytes = event.sizeBytes,
-                error = event.error,
-            )
-        }
+        fun fromEvent(event: SharinganEvent): EventDto =
+            when (event) {
+                is HttpEvent ->
+                    HttpDto(
+                        id = event.id,
+                        timestampMillis = event.timestampMillis,
+                        method = event.method,
+                        url = event.url,
+                        statusCode = event.statusCode,
+                        durationMillis = event.durationMillis,
+                        requestHeaders = event.requestHeaders.map { (name, value) -> HeaderDto(name, value) },
+                        responseHeaders = event.responseHeaders.map { (name, value) -> HeaderDto(name, value) },
+                        requestBody = event.requestBody,
+                        responseBody = event.responseBody,
+                        contentType = event.contentType,
+                        responseSizeBytes = event.responseSizeBytes,
+                        timing = event.timing.map { TimingPhaseDto(it.label, it.millis) },
+                        error = event.error,
+                    )
+                is MqttEvent ->
+                    MqttDto(
+                        id = event.id,
+                        timestampMillis = event.timestampMillis,
+                        direction = event.direction.name,
+                        topic = event.topic,
+                        qos = event.qos,
+                        retained = event.retained,
+                        payload = event.payload,
+                        payloadSizeBytes = event.payloadSizeBytes,
+                        error = event.error,
+                    )
+                is BleEvent ->
+                    BleDto(
+                        id = event.id,
+                        timestampMillis = event.timestampMillis,
+                        operation = event.operation.name,
+                        device = event.device,
+                        characteristic = event.characteristic,
+                        uuid = event.uuid,
+                        payload = event.payload,
+                        sizeBytes = event.sizeBytes,
+                        error = event.error,
+                    )
+            }
     }
 }
 
 @Serializable
-internal data class HeaderDto(val name: String, val value: String)
+internal data class HeaderDto(
+    val name: String,
+    val value: String,
+)
 
 @Serializable
-internal data class TimingPhaseDto(val label: String, val millis: Long)
+internal data class TimingPhaseDto(
+    val label: String,
+    val millis: Long,
+)
 
 @Serializable
 internal data class HttpDto(

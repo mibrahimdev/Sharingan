@@ -1,14 +1,8 @@
 package dev.sharingan.db
 
 import app.cash.sqldelight.db.SqlDriver
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.AtomicInt
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.concurrent.atomics.incrementAndFetch
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -16,10 +10,16 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.onTimeout
 import kotlinx.coroutines.selects.select
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Write-behind persistence: drains events off the caller's seam into an
@@ -102,8 +102,7 @@ public class PersistenceController<T : Any> private constructor(
      */
     public fun start() {
         if (stopped.load()) error("PersistenceController is single-use; already stopped")
-        // LAZY + start only on the CAS win: an eager launch would need a cancel()
-        // on the losing branch, which could prompt-cancel a receive and drop an event.
+        // LAZY + start only on the CAS win: an eager launch would need a cancel() that could drop an event.
         val job = scope.launch(start = CoroutineStart.LAZY) { runFlusher() }
         if (flusherJob.compareAndSet(null, job)) job.start()
     }
@@ -134,8 +133,7 @@ public class PersistenceController<T : Any> private constructor(
      */
     public suspend fun stop() {
         stopped.store(true)
-        // Close first: a start() that won the CAS after stopped=true then lands
-        // on a closed channel and exits at once.
+        // Close first so a start() that won the CAS after stopped=true lands on a closed channel and exits at once.
         channel.close()
         val job = flusherJob.exchange(null) ?: return
         job.join()
@@ -153,28 +151,28 @@ public class PersistenceController<T : Any> private constructor(
         val batch = mutableListOf<T>()
         var deadline = 0L
         while (true) {
-            val command: Command<T>? = if (batch.isEmpty()) {
-                try {
-                    channel.receive()
-                } catch (e: ClosedReceiveChannelException) {
-                    break
-                }
-            } else {
-                // Atomic receive-or-timeout; withTimeoutOrNull could prompt-cancel
-                // an already-taken element and lose it.
-                var closed = false
-                select<Command<T>?> {
-                    channel.onReceiveCatching { result ->
-                        if (result.isClosed) {
-                            closed = true
-                            null
-                        } else {
-                            result.getOrNull()
-                        }
+            val command: Command<T>? =
+                if (batch.isEmpty()) {
+                    try {
+                        channel.receive()
+                    } catch (e: ClosedReceiveChannelException) {
+                        break
                     }
-                    onTimeout(deadline - nowMillis()) { null }
-                }.also { if (closed) break }
-            }
+                } else {
+                    // Atomic receive-or-timeout; withTimeoutOrNull could prompt-cancel an already-taken element.
+                    var closed = false
+                    select<Command<T>?> {
+                        channel.onReceiveCatching { result ->
+                            if (result.isClosed) {
+                                closed = true
+                                null
+                            } else {
+                                result.getOrNull()
+                            }
+                        }
+                        onTimeout(deadline - nowMillis()) { null }
+                    }.also { if (closed) break }
+                }
             when (command) {
                 is Command.Record -> {
                     val event = command.event
@@ -211,9 +209,7 @@ public class PersistenceController<T : Any> private constructor(
         } catch (t: Throwable) {
             // Reset the session in case its row rolled back with this transaction.
             if (isNewSession) sessionId = null
-            // ponytail: println is the whole reporting story — the project has no
-            // logging facility, and a debug-only recorder does not justify inventing
-            // one. Route this through a real logger if the library ever grows one.
+            // ponytail: println is the whole story — no logging facility exists; route through a real one if it ever gains one.
             println("Sharingan persistence: dropped a batch of ${snapshot.size} events ($t)")
         }
     }
@@ -229,7 +225,10 @@ public class PersistenceController<T : Any> private constructor(
         )
     }
 
-    private fun persist(row: EventRow, session: String) {
+    private fun persist(
+        row: EventRow,
+        session: String,
+    ) {
         database.sharinganDatabaseQueries.insertEvent(
             id = "$session-${row.rawId}",
             session_id = session,
@@ -249,13 +248,14 @@ public class PersistenceController<T : Any> private constructor(
 }
 
 // DROP_OLDEST keeps the crash-tail — the newest events matter most here.
-internal fun <T> newEventChannel(capacity: Int): Channel<T> =
-    Channel(capacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+internal fun <T> newEventChannel(capacity: Int): Channel<T> = Channel(capacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-// Everything the flusher does — writes and clears — travels on one channel, so
-// the single flusher coroutine applies DB mutations in submission order.
+// Writes and clears travel on one channel, so the single flusher applies DB mutations in submission order.
 private sealed interface Command<out T> {
-    data class Record<T>(val event: T) : Command<T>
+    data class Record<T>(
+        val event: T,
+    ) : Command<T>
+
     data object ClearAll : Command<Nothing>
 }
 

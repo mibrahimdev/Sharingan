@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.ktlint)
 }
 
 group = "io.github.mibrahimdev"
@@ -39,17 +40,25 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
-        androidMain.dependencies    { implementation(libs.sqldelight.android.driver) }
-        iosMain.dependencies        { implementation(libs.sqldelight.native.driver) }
-        androidUnitTest.dependencies{ implementation(libs.sqldelight.sqlite.driver) }
-        iosTest.dependencies        { implementation(libs.sqldelight.native.driver) }
+        androidMain.dependencies { implementation(libs.sqldelight.android.driver) }
+        iosMain.dependencies { implementation(libs.sqldelight.native.driver) }
+        androidUnitTest.dependencies { implementation(libs.sqldelight.sqlite.driver) }
+        iosTest.dependencies { implementation(libs.sqldelight.native.driver) }
     }
 }
 
 android {
     namespace = "dev.sharingan.db"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig { minSdk = libs.versions.android.minSdk.get().toInt() }
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
+    defaultConfig {
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -58,7 +67,9 @@ android {
 
 mavenPublishing {
     publishToMavenCentral()
-    if (!providers.gradleProperty("localPublishNoSign").isPresent) { signAllPublications() }
+    if (!providers.gradleProperty("localPublishNoSign").isPresent) {
+        signAllPublications()
+    }
     coordinates(group.toString(), "sharingan-db", version.toString())
     pom {
         name.set("Sharingan DB")
