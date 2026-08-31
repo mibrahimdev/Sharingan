@@ -1,10 +1,15 @@
 root = true
 
 [*.{kt,kts}]
-ij_kotlin_code_style = ktlint_official
+ij_kotlin_code_style = intellij_idea
 max_line_length = 140
 ij_kotlin_name_count_to_use_star_import = 2147483647
 ij_kotlin_name_count_to_use_star_import_with_matching_name = 2147483647
 ktlint_standard_trailing-comma-on-call-site = enabled
 ktlint_standard_trailing-comma-on-declaration-site = enabled
 ktlint_function_naming_ignore_when_annotated_with = Composable, ObjCName
+
+# Comment mechanics: comments wrap at max_line_length, `//` over `/* */` for
+# single-line remarks.
+ktlint_standard_comment-wrapping = enabled
+ktlint_standard_no-single-line-block-comment = enabled

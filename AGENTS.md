@@ -120,6 +120,17 @@ binary-compatibility-validator. The golden dumps are committed at
 - `./gradlew apiCheck` — fails if the public API drifts from the committed dumps. Runs on every PR (`.github/workflows/api-check.yml`, macOS so the iOS klib targets build).
 - `./gradlew apiDump` — regenerate the dumps after an *intentional* API change, then commit the updated `api/*.api` files in the same PR.
 
+## Comments policy
+
+Code comments are for *why*, never *what*. Default to **no comment**; write code that explains itself.
+
+- DO NOT add comments narrating the obvious (`// increment counter`, `// call the API`, section-divider banners).
+- DO NOT add "AI notes": comments narrating the change you just made (`// added null check`, `// new implementation`, `// refactored for clarity`), restating the function name, or addressing the reviewer.
+- DO NOT leave TODO/FIXME without an issue reference (`// TODO(#NN):`).
+- Comments ARE justified for: a non-obvious invariant or trade-off, a workaround with its bug/issue link, a pointer to the primary source (spec/ADR), or a public-API contract the signature can't express — prefer KDoc for that.
+- If a comment only survives because the code is hard to read, fix the code instead.
+- ktlint enforces the mechanics (wrapping, `//` over `/* */`); this policy is enforced by review.
+
 ## Agent skills
 
 ### Issue tracker
