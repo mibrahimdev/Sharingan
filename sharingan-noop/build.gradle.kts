@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.ktlint)
 }
 
 // Maven coordinate only — Kotlin packages and the Android namespace stay
@@ -47,10 +48,16 @@ kotlin {
 
 android {
     namespace = "dev.sharingan.noop"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 
     compileOptions {
@@ -72,7 +79,7 @@ mavenPublishing {
     pom {
         name.set("Sharingan (no-op)")
         description.set(
-            "Inert release replacement for Sharingan — same API, zero runtime cost."
+            "Inert release replacement for Sharingan — same API, zero runtime cost.",
         )
         url.set("https://mibrahimdev.github.io/Sharingan/")
         licenses {

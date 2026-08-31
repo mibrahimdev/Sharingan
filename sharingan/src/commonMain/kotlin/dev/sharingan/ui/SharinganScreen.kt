@@ -35,9 +35,15 @@ import kotlinx.coroutines.delay
 // need it. internal -> not part of the checked public API surface.
 internal val LocalStripTopInset = staticCompositionLocalOf { false }
 
-internal fun sharinganContentInsets(safeDrawing: WindowInsets, stripTop: Boolean): WindowInsets =
-    if (stripTop) safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
-    else safeDrawing
+internal fun sharinganContentInsets(
+    safeDrawing: WindowInsets,
+    stripTop: Boolean,
+): WindowInsets =
+    if (stripTop) {
+        safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+    } else {
+        safeDrawing
+    }
 
 /**
  * The Sharingan log browser: home (three protocol tabs), event detail, and
@@ -67,12 +73,14 @@ public fun SharinganScreen(
     var query by remember(protocol) { mutableStateOf("") }
     var chipKey by remember(protocol) { mutableStateOf("all") }
 
-    val counts = remember(events) {
-        Protocol.entries.associateWith { p -> events.count { protocolOf(it) == p } }
-    }
-    val rows = remember(events, protocol, chipKey, query) {
-        visibleEvents(events, protocol, chipKey, query)
-    }
+    val counts =
+        remember(events) {
+            Protocol.entries.associateWith { p -> events.count { protocolOf(it) == p } }
+        }
+    val rows =
+        remember(events, protocol, chipKey, query) {
+            visibleEvents(events, protocol, chipKey, query)
+        }
     val selectedEvent = selectedId?.let { id -> events.firstOrNull { it.id == id } }
     val tabEvents = remember(events, protocol) { events.filter { protocolOf(it) == protocol } }
 
@@ -83,25 +91,27 @@ public fun SharinganScreen(
         }
     }
 
-    val shareState = shareScope?.let { scope ->
-        ShareSheetState(
-            scope = scope,
-            protocol = protocol,
-            preview = resolveShare(ShareAction.COPY_AGENT, scope, selectedEvent, tabEvents).payload.take(400),
-            curlAvailable = scope == ShareScope.SINGLE && selectedEvent is HttpEvent,
-        )
-    }
+    val shareState =
+        shareScope?.let { scope ->
+            ShareSheetState(
+                scope = scope,
+                protocol = protocol,
+                preview = resolveShare(ShareAction.COPY_AGENT, scope, selectedEvent, tabEvents).payload.take(400),
+                curlAvailable = scope == ShareScope.SINGLE && selectedEvent is HttpEvent,
+            )
+        }
 
     SharinganTheme(darkTheme = darkTheme) {
         SharinganScreenContent(
-            homeState = HomeUiState(
-                protocol = protocol,
-                counts = counts,
-                rows = rows,
-                query = query,
-                chipKey = chipKey,
-                recording = recording,
-            ),
+            homeState =
+                HomeUiState(
+                    protocol = protocol,
+                    counts = counts,
+                    rows = rows,
+                    query = query,
+                    chipKey = chipKey,
+                    recording = recording,
+                ),
             selectedEvent = selectedEvent,
             shareState = shareState,
             toastMessage = toastMessage,

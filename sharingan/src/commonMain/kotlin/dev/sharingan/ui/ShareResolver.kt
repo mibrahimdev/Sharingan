@@ -31,26 +31,31 @@ internal fun resolveShare(
 ): ShareResolution {
     val single = if (scope == ShareScope.SINGLE) selectedEvent else null
     return when (action) {
-        ShareAction.COPY_AGENT -> ShareResolution(
-            payload = single?.let { SharinganExport.agentMarkdown(it) } ?: SharinganExport.agentMarkdown(tabEvents),
-            delivery = ShareDelivery.CLIPBOARD,
-            toast = "Copied for agent ✓",
-        )
-        ShareAction.COPY_HUMAN -> ShareResolution(
-            payload = (single as? HttpEvent)?.let { SharinganExport.curl(it) }
-                ?: SharinganExport.summary(single?.let { listOf(it) } ?: tabEvents),
-            delivery = ShareDelivery.CLIPBOARD,
-            toast = "Copied ✓",
-        )
-        ShareAction.COPY_RAW -> ShareResolution(
-            payload = single?.let { SharinganExport.json(it) } ?: SharinganExport.sessionJson(tabEvents),
-            delivery = ShareDelivery.CLIPBOARD,
-            toast = "Copied JSON ✓",
-        )
-        ShareAction.SYSTEM_SHARE -> ShareResolution(
-            payload = single?.let { SharinganExport.agentMarkdown(it) } ?: SharinganExport.agentMarkdown(tabEvents),
-            delivery = ShareDelivery.SYSTEM_SHARE,
-            toast = null,
-        )
+        ShareAction.COPY_AGENT ->
+            ShareResolution(
+                payload = single?.let { SharinganExport.agentMarkdown(it) } ?: SharinganExport.agentMarkdown(tabEvents),
+                delivery = ShareDelivery.CLIPBOARD,
+                toast = "Copied for agent ✓",
+            )
+        ShareAction.COPY_HUMAN ->
+            ShareResolution(
+                payload =
+                    (single as? HttpEvent)?.let { SharinganExport.curl(it) }
+                        ?: SharinganExport.summary(single?.let { listOf(it) } ?: tabEvents),
+                delivery = ShareDelivery.CLIPBOARD,
+                toast = "Copied ✓",
+            )
+        ShareAction.COPY_RAW ->
+            ShareResolution(
+                payload = single?.let { SharinganExport.json(it) } ?: SharinganExport.sessionJson(tabEvents),
+                delivery = ShareDelivery.CLIPBOARD,
+                toast = "Copied JSON ✓",
+            )
+        ShareAction.SYSTEM_SHARE ->
+            ShareResolution(
+                payload = single?.let { SharinganExport.agentMarkdown(it) } ?: SharinganExport.agentMarkdown(tabEvents),
+                delivery = ShareDelivery.SYSTEM_SHARE,
+                toast = null,
+            )
     }
 }

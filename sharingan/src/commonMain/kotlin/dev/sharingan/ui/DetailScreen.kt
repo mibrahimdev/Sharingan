@@ -57,7 +57,10 @@ internal fun DetailScreenContent(
 }
 
 @Composable
-private fun DetailHeader(onBack: () -> Unit, onShare: () -> Unit) {
+private fun DetailHeader(
+    onBack: () -> Unit,
+    onShare: () -> Unit,
+) {
     val colors = LocalSharinganColors.current
     Column(Modifier.fillMaxWidth().background(colors.bgElev)) {
         Row(
@@ -118,7 +121,10 @@ private fun TitleBlock(event: SharinganEvent) {
 }
 
 @Composable
-internal fun BadgeChip(label: String, tint: Tint) {
+internal fun BadgeChip(
+    label: String,
+    tint: Tint,
+) {
     Text(
         label,
         color = tint.color,
@@ -126,11 +132,12 @@ internal fun BadgeChip(label: String, tint: Tint) {
         fontWeight = FontWeight.Bold,
         fontFamily = MonoFont,
         textAlign = TextAlign.Center,
-        modifier = Modifier
-            .clip(RoundedCornerShape(5.dp))
-            .background(tint.soft)
-            .padding(horizontal = 6.dp, vertical = 1.dp)
-            .widthIn(min = 30.dp),
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(5.dp))
+                .background(tint.soft)
+                .padding(horizontal = 6.dp, vertical = 1.dp)
+                .widthIn(min = 30.dp),
     )
 }
 
@@ -167,7 +174,11 @@ internal fun Section(
 }
 
 @Composable
-internal fun KeyValueRow(key: String, value: String, valueColor: Color? = null) {
+internal fun KeyValueRow(
+    key: String,
+    value: String,
+    valueColor: Color? = null,
+) {
     val colors = LocalSharinganColors.current
     Column {
         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -220,20 +231,25 @@ internal fun BodyBlock(raw: String) {
 }
 
 @Composable
-private fun rememberAnnotatedJson(raw: String, colors: SharinganColors): AnnotatedString =
+private fun rememberAnnotatedJson(
+    raw: String,
+    colors: SharinganColors,
+): AnnotatedString =
     remember(raw, colors) {
-        val tokens = prettyJsonTokens(raw)
-            ?: return@remember AnnotatedString(raw, SpanStyle(color = colors.text))
+        val tokens =
+            prettyJsonTokens(raw)
+                ?: return@remember AnnotatedString(raw, SpanStyle(color = colors.text))
         buildAnnotatedString {
             for (token in tokens) {
-                val color = when (token.type) {
-                    JsonTokenType.KEY -> colors.info
-                    JsonTokenType.STRING -> colors.ok
-                    JsonTokenType.NUMBER -> colors.warn
-                    JsonTokenType.LITERAL -> colors.violet
-                    JsonTokenType.PUNCT -> colors.textDim
-                    JsonTokenType.WS -> colors.textDim
-                }
+                val color =
+                    when (token.type) {
+                        JsonTokenType.KEY -> colors.info
+                        JsonTokenType.STRING -> colors.ok
+                        JsonTokenType.NUMBER -> colors.warn
+                        JsonTokenType.LITERAL -> colors.violet
+                        JsonTokenType.PUNCT -> colors.textDim
+                        JsonTokenType.WS -> colors.textDim
+                    }
                 pushStyle(SpanStyle(color = color))
                 append(token.text)
                 pop()

@@ -12,15 +12,21 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class EventFilterTest {
+    private fun http(
+        method: String = "GET",
+        status: Int? = 200,
+        url: String = "https://api.acme.com/state",
+    ) = HttpEvent(id = "h", timestampMillis = 0, method = method, url = url, statusCode = status)
 
-    private fun http(method: String = "GET", status: Int? = 200, url: String = "https://api.acme.com/state") =
-        HttpEvent(id = "h", timestampMillis = 0, method = method, url = url, statusCode = status)
+    private fun mqtt(
+        direction: MqttDirection,
+        topic: String = "devices/4471/telemetry",
+    ) = MqttEvent(id = "m", timestampMillis = 0, direction = direction, topic = topic)
 
-    private fun mqtt(direction: MqttDirection, topic: String = "devices/4471/telemetry") =
-        MqttEvent(id = "m", timestampMillis = 0, direction = direction, topic = topic)
-
-    private fun ble(op: BleOperation, characteristic: String? = "Heart Rate Measurement") =
-        BleEvent(id = "b", timestampMillis = 0, operation = op, device = "HR-9F", characteristic = characteristic)
+    private fun ble(
+        op: BleOperation,
+        characteristic: String? = "Heart Rate Measurement",
+    ) = BleEvent(id = "b", timestampMillis = 0, operation = op, device = "HR-9F", characteristic = characteristic)
 
     @Test
     fun `When events are grouped by protocol Then each event lands in its protocol tab`() {

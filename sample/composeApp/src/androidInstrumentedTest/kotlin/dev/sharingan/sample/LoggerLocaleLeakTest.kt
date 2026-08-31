@@ -36,14 +36,14 @@ import java.util.Locale
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 33) // LocaleManager is API 33+; skip (don't crash) below.
 class LoggerLocaleLeakTest {
-
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context get() = instrumentation.targetContext
     private val localeManager get() = context.getSystemService(LocaleManager::class.java)
 
-    private fun setAppLocale(tags: String) = instrumentation.runOnMainSync {
-        localeManager.applicationLocales = LocaleList.forLanguageTags(tags)
-    }
+    private fun setAppLocale(tags: String) =
+        instrumentation.runOnMainSync {
+            localeManager.applicationLocales = LocaleList.forLanguageTags(tags)
+        }
 
     @Before
     fun pinHostToArabic() {

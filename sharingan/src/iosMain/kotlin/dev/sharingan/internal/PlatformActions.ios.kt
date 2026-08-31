@@ -14,16 +14,18 @@ internal actual fun copyToClipboard(text: String) {
 
 internal actual fun shareText(text: String) {
     NSOperationQueue.mainQueue.addOperationWithBlock {
-        val root = UIApplication.sharedApplication.connectedScenes
-            .filterIsInstance<UIWindowScene>()
-            .flatMap { it.windows.filterIsInstance<UIWindow>() }
-            .firstOrNull { it.keyWindow }
-            ?.rootViewController ?: return@addOperationWithBlock
+        val root =
+            UIApplication.sharedApplication.connectedScenes
+                .filterIsInstance<UIWindowScene>()
+                .flatMap { it.windows.filterIsInstance<UIWindow>() }
+                .firstOrNull { it.keyWindow }
+                ?.rootViewController ?: return@addOperationWithBlock
         val presenter = topmostViewController(root)
-        val controller = UIActivityViewController(
-            activityItems = listOf(text),
-            applicationActivities = null,
-        )
+        val controller =
+            UIActivityViewController(
+                activityItems = listOf(text),
+                applicationActivities = null,
+            )
         // iPad requires a popover anchor; anchor to the presenter's view.
         controller.popoverPresentationController?.sourceView = presenter.view
         presenter.presentViewController(controller, animated = true, completion = null)

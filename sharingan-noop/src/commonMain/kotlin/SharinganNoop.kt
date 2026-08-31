@@ -18,7 +18,9 @@ public class SharinganStore(
     public val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
     public fun record(event: SharinganEvent) {}
+
     public fun setRecording(recording: Boolean) {}
+
     public fun clear() {}
 
     public companion object {
@@ -54,7 +56,9 @@ public class HttpLogger(
 }
 
 /** No-op MQTT logger. */
-public class MqttLogger(@Suppress("UNUSED_PARAMETER") store: SharinganStore) {
+public class MqttLogger(
+    @Suppress("UNUSED_PARAMETER") store: SharinganStore,
+) {
     public fun publish(
         topic: String,
         payload: String?,
@@ -63,19 +67,69 @@ public class MqttLogger(@Suppress("UNUSED_PARAMETER") store: SharinganStore) {
         error: String? = null,
     ) {}
 
-    public fun received(topic: String, payload: String?, qos: Int = 0, retained: Boolean = false) {}
-    public fun subscribed(topicFilter: String, qos: Int = 0) {}
+    public fun received(
+        topic: String,
+        payload: String?,
+        qos: Int = 0,
+        retained: Boolean = false,
+    ) {}
+
+    public fun subscribed(
+        topicFilter: String,
+        qos: Int = 0,
+    ) {}
 }
 
 /** No-op BLE logger. */
-public class BleLogger(@Suppress("UNUSED_PARAMETER") store: SharinganStore) {
-    public fun connect(device: String, error: String? = null) {}
-    public fun disconnect(device: String, error: String? = null) {}
-    public fun discover(device: String, service: String? = null, uuid: String? = null, detail: String? = null) {}
-    public fun read(device: String, characteristic: String? = null, uuid: String? = null, value: String? = null, error: String? = null) {}
-    public fun write(device: String, characteristic: String? = null, uuid: String? = null, value: String? = null, error: String? = null) {}
-    public fun notify(device: String, characteristic: String? = null, uuid: String? = null, value: String? = null) {}
-    public fun error(device: String, message: String, characteristic: String? = null, uuid: String? = null) {}
+public class BleLogger(
+    @Suppress("UNUSED_PARAMETER") store: SharinganStore,
+) {
+    public fun connect(
+        device: String,
+        error: String? = null,
+    ) {}
+
+    public fun disconnect(
+        device: String,
+        error: String? = null,
+    ) {}
+
+    public fun discover(
+        device: String,
+        service: String? = null,
+        uuid: String? = null,
+        detail: String? = null,
+    ) {}
+
+    public fun read(
+        device: String,
+        characteristic: String? = null,
+        uuid: String? = null,
+        value: String? = null,
+        error: String? = null,
+    ) {}
+
+    public fun write(
+        device: String,
+        characteristic: String? = null,
+        uuid: String? = null,
+        value: String? = null,
+        error: String? = null,
+    ) {}
+
+    public fun notify(
+        device: String,
+        characteristic: String? = null,
+        uuid: String? = null,
+        value: String? = null,
+    ) {}
+
+    public fun error(
+        device: String,
+        message: String,
+        characteristic: String? = null,
+        uuid: String? = null,
+    ) {}
 }
 
 /** No-op facade: same surface as the real artifact, captures nothing. */
@@ -89,15 +143,21 @@ public object Sharingan {
     public val isRecording: StateFlow<Boolean> get() = store.isRecording
 
     public fun setRecording(recording: Boolean) {}
+
     public fun clear() {}
 }
 
 /** No-op exporters: signatures match, output is empty. */
 public object SharinganExport {
     public fun agentMarkdown(event: SharinganEvent): String = ""
+
     public fun agentMarkdown(events: List<SharinganEvent>): String = ""
+
     public fun curl(event: HttpEvent): String = ""
+
     public fun json(event: SharinganEvent): String = ""
+
     public fun sessionJson(events: List<SharinganEvent>): String = ""
+
     public fun summary(events: List<SharinganEvent>): String = ""
 }

@@ -28,15 +28,17 @@ internal fun SharinganMark(
         val r = this.size.minDimension / 2f
         val center = Offset(this.size.width / 2f, this.size.height / 2f)
         drawCircle(
-            brush = Brush.radialGradient(
-                colorStops = arrayOf(
-                    0.0f to Color(0xFFFF5A4E),
-                    0.55f to Color(0xFFE5342B),
-                    1.0f to Color(0xFFA21C16),
+            brush =
+                Brush.radialGradient(
+                    colorStops =
+                        arrayOf(
+                            0.0f to Color(0xFFFF5A4E),
+                            0.55f to Color(0xFFE5342B),
+                            1.0f to Color(0xFFA21C16),
+                        ),
+                    center = Offset(center.x - r * 0.24f, center.y - r * 0.4f),
+                    radius = r * 1.6f,
                 ),
-                center = Offset(center.x - r * 0.24f, center.y - r * 0.4f),
-                radius = r * 1.6f,
-            ),
             radius = r,
             center = center,
         )

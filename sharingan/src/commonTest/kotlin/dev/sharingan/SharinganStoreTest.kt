@@ -10,17 +10,17 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class SharinganStoreTest {
-
-    private fun event(id: String): SharinganEvent = MqttEvent(
-        id = id,
-        timestampMillis = 0L,
-        direction = MqttDirection.PUBLISH,
-        topic = "t",
-        qos = 0,
-        retained = false,
-        payload = null,
-        payloadSizeBytes = null,
-    )
+    private fun event(id: String): SharinganEvent =
+        MqttEvent(
+            id = id,
+            timestampMillis = 0L,
+            direction = MqttDirection.PUBLISH,
+            topic = "t",
+            qos = 0,
+            retained = false,
+            payload = null,
+            payloadSizeBytes = null,
+        )
 
     @Test
     fun `When an event is recorded Then it appears in the events flow in insertion order`() {
@@ -70,15 +70,19 @@ internal class SharinganStoreTest {
         store.record(event("m1"))
         store.record(
             HttpEvent(
-                id = "h1", timestampMillis = 0L, method = "GET",
+                id = "h1",
+                timestampMillis = 0L,
+                method = "GET",
                 url = "https://api.example.com/v1/state",
-            )
+            ),
         )
         store.record(
             BleEvent(
-                id = "b1", timestampMillis = 0L, operation = BleOperation.READ,
+                id = "b1",
+                timestampMillis = 0L,
+                operation = BleOperation.READ,
                 device = "HR-Monitor",
-            )
+            ),
         )
         val events = store.events.value
         assertEquals(1, events.count { it is HttpEvent })
@@ -87,35 +91,37 @@ internal class SharinganStoreTest {
     }
 
     @Test
-    fun `Given many producers recording concurrently When all complete Then no event is lost or duplicated`() = runTest {
-        val producers = 16
-        val perProducer = 500
-        val total = producers * perProducer
+    fun `Given many producers recording concurrently When all complete Then no event is lost or duplicated`() =
+        runTest {
+            val producers = 16
+            val perProducer = 500
+            val total = producers * perProducer
 
-        // Capacity holds every event, so a lost compare-and-set update surfaces
-        // as a missing event rather than as legitimate ring-buffer eviction —
-        // making this a direct check of the lock-free `record` path under load.
-        val store = SharinganStore(capacity = total)
+            // Capacity holds every event, so a lost compare-and-set update surfaces
+            // as a missing event rather than as legitimate ring-buffer eviction —
+            // making this a direct check of the lock-free `record` path under load.
+            val store = SharinganStore(capacity = total)
 
-        // Each producer records on a real background thread (Dispatchers.Default
-        // is multi-threaded on both the JVM and Kotlin/Native), so the producers
-        // genuinely contend on the same MutableStateFlow rather than interleaving
-        // cooperatively on a single test thread.
-        coroutineScope {
-            repeat(producers) { producer ->
-                launch(Dispatchers.Default) {
-                    repeat(perProducer) { seq -> store.record(event("p$producer-$seq")) }
+            // Each producer records on a real background thread (Dispatchers.Default
+            // is multi-threaded on both the JVM and Kotlin/Native), so the producers
+            // genuinely contend on the same MutableStateFlow rather than interleaving
+            // cooperatively on a single test thread.
+            coroutineScope {
+                repeat(producers) { producer ->
+                    launch(Dispatchers.Default) {
+                        repeat(perProducer) { seq -> store.record(event("p$producer-$seq")) }
+                    }
                 }
             }
-        }
 
-        val ids = store.events.value.map { it.id }
-        assertEquals(total, ids.size, "lost events: a concurrent record() dropped an update")
-        assertEquals(total, ids.toSet().size, "duplicate event ids in the store")
+            val ids = store.events.value.map { it.id }
+            assertEquals(total, ids.size, "lost events: a concurrent record() dropped an update")
+            assertEquals(total, ids.toSet().size, "duplicate event ids in the store")
 
-        val expected = buildSet {
-            repeat(producers) { producer -> repeat(perProducer) { seq -> add("p$producer-$seq") } }
+            val expected =
+                buildSet {
+                    repeat(producers) { producer -> repeat(perProducer) { seq -> add("p$producer-$seq") } }
+                }
+            assertEquals(expected, ids.toSet())
         }
-        assertEquals(expected, ids.toSet())
-    }
 }

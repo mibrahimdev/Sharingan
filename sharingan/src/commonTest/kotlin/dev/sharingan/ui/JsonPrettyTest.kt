@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 internal class JsonPrettyTest {
-
     @Test
     fun `When minified JSON is prettified Then it is re-indented with two spaces`() {
         val pretty = prettyJson("""{"deviceId":4471,"online":true,"sensors":{"temp":23.4}}""")

@@ -23,44 +23,47 @@ import kotlinx.coroutines.delay
  * SharinganKtor plugin exactly like production traffic would.
  */
 object DemoTraffic {
-
-    private val client = HttpClient(
-        MockEngine { request ->
-            delay((40..220).random().toLong())
-            when {
-                request.url.encodedPath.endsWith("/auth/refresh") -> respond(
-                    """{"error":"invalid_token","message":"Refresh token expired","code":"AUTH_017"}""",
-                    HttpStatusCode.Unauthorized,
-                    jsonHeaders(),
-                )
-                request.url.encodedPath.endsWith("/stream") -> {
-                    delay(900)
-                    respond(
-                        """{"error":"upstream_timeout","message":"Telemetry shard 3 did not respond","traceId":"e0c2-7741"}""",
-                        HttpStatusCode.InternalServerError,
-                        jsonHeaders(),
-                    )
+    private val client =
+        HttpClient(
+            MockEngine { request ->
+                delay((40..220).random().toLong())
+                when {
+                    request.url.encodedPath.endsWith("/auth/refresh") ->
+                        respond(
+                            """{"error":"invalid_token","message":"Refresh token expired","code":"AUTH_017"}""",
+                            HttpStatusCode.Unauthorized,
+                            jsonHeaders(),
+                        )
+                    request.url.encodedPath.endsWith("/stream") -> {
+                        delay(900)
+                        respond(
+                            """{"error":"upstream_timeout","message":"Telemetry shard 3 did not respond","traceId":"e0c2-7741"}""",
+                            HttpStatusCode.InternalServerError,
+                            jsonHeaders(),
+                        )
+                    }
+                    request.url.encodedPath.endsWith("/commands") ->
+                        respond(
+                            """{"accepted":true,"commandId":9921,"queuedAt":"2026-06-10T12:04:33Z"}""",
+                            HttpStatusCode.Accepted,
+                            jsonHeaders(),
+                        )
+                    request.method.value == "DELETE" -> respond("", HttpStatusCode.NoContent)
+                    else ->
+                        respond(
+                            """{"deviceId":4471,"online":true,"firmware":"2.4.1","battery":0.86,"sensors":{"temp":23.4,"humidity":48}}""",
+                            HttpStatusCode.OK,
+                            headersOf(
+                                HttpHeaders.ContentType to listOf("application/json; charset=utf-8"),
+                                "X-Trace-Id" to listOf("b1f4-22a9"),
+                                HttpHeaders.CacheControl to listOf("no-store"),
+                            ),
+                        )
                 }
-                request.url.encodedPath.endsWith("/commands") -> respond(
-                    """{"accepted":true,"commandId":9921,"queuedAt":"2026-06-10T12:04:33Z"}""",
-                    HttpStatusCode.Accepted,
-                    jsonHeaders(),
-                )
-                request.method.value == "DELETE" -> respond("", HttpStatusCode.NoContent)
-                else -> respond(
-                    """{"deviceId":4471,"online":true,"firmware":"2.4.1","battery":0.86,"sensors":{"temp":23.4,"humidity":48}}""",
-                    HttpStatusCode.OK,
-                    headersOf(
-                        HttpHeaders.ContentType to listOf("application/json; charset=utf-8"),
-                        "X-Trace-Id" to listOf("b1f4-22a9"),
-                        HttpHeaders.CacheControl to listOf("no-store"),
-                    ),
-                )
-            }
-        },
-    ) {
-        install(SharinganKtor)
-    }
+            },
+        ) {
+            install(SharinganKtor)
+        }
 
     private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, "application/json")
 

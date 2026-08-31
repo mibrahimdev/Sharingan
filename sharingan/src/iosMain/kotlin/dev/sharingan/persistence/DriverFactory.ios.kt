@@ -4,6 +4,5 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 
 internal actual class DriverFactory {
-    actual fun create(): SqlDriver =
-        NativeSqliteDriver(SharinganDatabase.Schema, "sharingan.db")
+    actual fun create(): SqlDriver = NativeSqliteDriver(SharinganDatabase.Schema, "sharingan.db")
 }

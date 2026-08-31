@@ -12,9 +12,9 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentLength
 import io.ktor.http.contentType
-import io.ktor.http.content.OutgoingContent
 
 /**
  * Configuration for the [SharinganKtor] client plugin.
@@ -58,26 +58,28 @@ public val SharinganKtor: ClientPlugin<SharinganKtorConfig> =
             val method = request.method.value
             val url = request.url.buildString()
             val content = request.body as? OutgoingContent
-            val requestHeaders = buildList {
-                request.headers.entries().forEach { (name, values) -> values.forEach { add(name to it) } }
-                content?.contentType?.let { add("Content-Type" to it.toString()) }
-                content?.contentLength?.let { add("Content-Length" to it.toString()) }
-            }
+            val requestHeaders =
+                buildList {
+                    request.headers.entries().forEach { (name, values) -> values.forEach { add(name to it) } }
+                    content?.contentType?.let { add("Content-Type" to it.toString()) }
+                    content?.contentLength?.let { add("Content-Length" to it.toString()) }
+                }
             val requestBody = if (captureBodies) outgoingBodyText(content, maxBodyBytes) else null
 
-            val call = try {
-                proceed(request)
-            } catch (failure: Throwable) {
-                logger.log(
-                    method = method,
-                    url = url,
-                    durationMillis = currentTimeMillis() - startMillis,
-                    requestHeaders = requestHeaders,
-                    requestBody = requestBody,
-                    error = failure.message ?: failure::class.simpleName ?: "request failed",
-                )
-                throw failure
-            }
+            val call =
+                try {
+                    proceed(request)
+                } catch (failure: Throwable) {
+                    logger.log(
+                        method = method,
+                        url = url,
+                        durationMillis = currentTimeMillis() - startMillis,
+                        requestHeaders = requestHeaders,
+                        requestBody = requestBody,
+                        error = failure.message ?: failure::class.simpleName ?: "request failed",
+                    )
+                    throw failure
+                }
 
             val firstByteMillis = currentTimeMillis()
             val responseBody =
@@ -98,12 +100,14 @@ public val SharinganKtor: ClientPlugin<SharinganKtorConfig> =
                 requestBody = requestBody,
                 responseBody = responseBody,
                 contentType = call.response.contentType()?.let { "${it.contentType}/${it.contentSubtype}" },
-                responseSizeBytes = call.response.contentLength()
-                    ?: responseBody?.encodeToByteArray()?.size?.toLong(),
-                timing = listOf(
-                    TimingPhase("TTFB", firstByteMillis - startMillis),
-                    TimingPhase("Download", endMillis - firstByteMillis),
-                ),
+                responseSizeBytes =
+                    call.response.contentLength()
+                        ?: responseBody?.encodeToByteArray()?.size?.toLong(),
+                timing =
+                    listOf(
+                        TimingPhase("TTFB", firstByteMillis - startMillis),
+                        TimingPhase("Download", endMillis - firstByteMillis),
+                    ),
             )
             call
         }
@@ -112,11 +116,15 @@ public val SharinganKtor: ClientPlugin<SharinganKtorConfig> =
 private fun flattenHeaders(headers: Headers): List<Pair<String, String>> =
     headers.entries().flatMap { (name, values) -> values.map { name to it } }
 
-private fun outgoingBodyText(content: OutgoingContent?, maxBytes: Int): String? = when (content) {
-    is OutgoingContent.ByteArrayContent ->
-        if (isTextual(content.contentType)) truncate(content.bytes().decodeToString(), maxBytes) else null
-    else -> null
-}
+private fun outgoingBodyText(
+    content: OutgoingContent?,
+    maxBytes: Int,
+): String? =
+    when (content) {
+        is OutgoingContent.ByteArrayContent ->
+            if (isTextual(content.contentType)) truncate(content.bytes().decodeToString(), maxBytes) else null
+        else -> null
+    }
 
 private fun shouldReadBody(response: HttpResponse): Boolean {
     val contentType = response.contentType() ?: return false
@@ -135,6 +143,12 @@ private fun isTextual(contentType: ContentType?): Boolean {
         contentType.contentSubtype == "x-www-form-urlencoded"
 }
 
-private fun truncate(body: String, maxBytes: Int): String =
-    if (body.length <= maxBytes) body
-    else body.take(maxBytes) + "\n… (+${body.length - maxBytes} chars truncated)"
+private fun truncate(
+    body: String,
+    maxBytes: Int,
+): String =
+    if (body.length <= maxBytes) {
+        body
+    } else {
+        body.take(maxBytes) + "\n… (+${body.length - maxBytes} chars truncated)"
+    }

@@ -24,9 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** What the user picked in the share sheet. */
@@ -79,8 +79,11 @@ internal fun ShareSheetBody(
     val colors = LocalSharinganColors.current
     Column(modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 26.dp, top = 8.dp)) {
         Text(
-            if (state.scope == ShareScope.ALL) "Share session"
-            else "Share this ${state.protocol.eventNounSingular()}",
+            if (state.scope == ShareScope.ALL) {
+                "Share session"
+            } else {
+                "Share this ${state.protocol.eventNounSingular()}"
+            },
             color = colors.text,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
@@ -130,16 +133,18 @@ internal fun ShareSheetBody(
             )
             ShareOption(
                 icon = { tint -> Icon(SharinganIcons.Copy, null, tint = tint, modifier = Modifier.size(16.dp)) },
-                title = when {
-                    state.scope == ShareScope.ALL -> "Copy summary"
-                    state.curlAvailable -> "Copy as cURL"
-                    else -> "Copy summary"
-                },
-                subtitle = if (state.scope == ShareScope.SINGLE && state.curlAvailable) {
-                    "Reproducible request command"
-                } else {
-                    "Human-readable digest"
-                },
+                title =
+                    when {
+                        state.scope == ShareScope.ALL -> "Copy summary"
+                        state.curlAvailable -> "Copy as cURL"
+                        else -> "Copy summary"
+                    },
+                subtitle =
+                    if (state.scope == ShareScope.SINGLE && state.curlAvailable) {
+                        "Reproducible request command"
+                    } else {
+                        "Human-readable digest"
+                    },
                 onClick = { onAction(ShareAction.COPY_HUMAN) },
             )
             ShareOption(
@@ -218,12 +223,13 @@ private fun ShareSheetBody_SinglePreview() {
     SharinganTheme(darkTheme = false) {
         Box(Modifier.background(LocalSharinganColors.current.bgElev)) {
             ShareSheetBody(
-                state = ShareSheetState(
-                    scope = ShareScope.SINGLE,
-                    protocol = Protocol.HTTP,
-                    preview = "## GET /api/v2/devices/4471/state\n**Status:** 200 · **142ms** · 4.2 KB\n**Host:** api.acme-iot.com",
-                    curlAvailable = true,
-                ),
+                state =
+                    ShareSheetState(
+                        scope = ShareScope.SINGLE,
+                        protocol = Protocol.HTTP,
+                        preview = "## GET /api/v2/devices/4471/state\n**Status:** 200 · **142ms** · 4.2 KB\n**Host:** api.acme-iot.com",
+                        curlAvailable = true,
+                    ),
                 onAction = {},
             )
         }
@@ -236,12 +242,13 @@ private fun ShareSheetBody_SessionDarkPreview() {
     SharinganTheme(darkTheme = true) {
         Box(Modifier.background(LocalSharinganColors.current.bgElev)) {
             ShareSheetBody(
-                state = ShareSheetState(
-                    scope = ShareScope.ALL,
-                    protocol = Protocol.MQTT,
-                    preview = "# Sharingan session export\n4 events · HTTP 0 · MQTT 4 · BLE 0",
-                    curlAvailable = false,
-                ),
+                state =
+                    ShareSheetState(
+                        scope = ShareScope.ALL,
+                        protocol = Protocol.MQTT,
+                        preview = "# Sharingan session export\n4 events · HTTP 0 · MQTT 4 · BLE 0",
+                        curlAvailable = false,
+                    ),
                 onAction = {},
             )
         }

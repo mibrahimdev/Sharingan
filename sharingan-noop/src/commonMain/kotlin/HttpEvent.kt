@@ -34,7 +34,6 @@ public data class HttpEvent internal constructor(
     public val timing: List<TimingPhase> = emptyList(),
     override val error: String? = null,
 ) : SharinganEvent {
-
     /** Authority part of [url], including the port when present. */
     public val host: String get() = splitUrl(url).first
 
@@ -48,8 +47,11 @@ public data class HttpEvent internal constructor(
         fun splitUrl(url: String): Pair<String, String> {
             val afterScheme = url.substringAfter("://", url)
             val slash = afterScheme.indexOf('/')
-            return if (slash == -1) afterScheme to "/"
-            else afterScheme.take(slash) to afterScheme.substring(slash)
+            return if (slash == -1) {
+                afterScheme to "/"
+            } else {
+                afterScheme.take(slash) to afterScheme.substring(slash)
+            }
         }
     }
 }

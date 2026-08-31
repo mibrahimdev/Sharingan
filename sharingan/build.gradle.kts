@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.ktlint)
 }
 
 // Maven coordinate only — Kotlin packages and the Android namespace stay
@@ -101,10 +102,16 @@ kotlin {
 
 android {
     namespace = "dev.sharingan"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -132,7 +139,7 @@ mavenPublishing {
     pom {
         name.set("Sharingan")
         description.set(
-            "On-device debug logger and HTTP/MQTT/BLE inspector for Android & Kotlin Multiplatform."
+            "On-device debug logger and HTTP/MQTT/BLE inspector for Android & Kotlin Multiplatform.",
         )
         url.set("https://mibrahimdev.github.io/Sharingan/")
         licenses {

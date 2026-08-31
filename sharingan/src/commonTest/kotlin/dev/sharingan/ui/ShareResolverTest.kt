@@ -10,20 +10,21 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class ShareResolverTest {
-
-    private val http = HttpEvent(
-        id = "h1",
-        timestampMillis = 0,
-        method = "GET",
-        url = "https://api.acme.com/state",
-        statusCode = 200,
-    )
-    private val mqtt = MqttEvent(
-        id = "m1",
-        timestampMillis = 1,
-        direction = MqttDirection.PUBLISH,
-        topic = "devices/4471/telemetry",
-    )
+    private val http =
+        HttpEvent(
+            id = "h1",
+            timestampMillis = 0,
+            method = "GET",
+            url = "https://api.acme.com/state",
+            statusCode = 200,
+        )
+    private val mqtt =
+        MqttEvent(
+            id = "m1",
+            timestampMillis = 1,
+            direction = MqttDirection.PUBLISH,
+            topic = "devices/4471/telemetry",
+        )
     private val tab = listOf(http, mqtt)
 
     @Test

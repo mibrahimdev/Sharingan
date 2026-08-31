@@ -5,7 +5,6 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class TopmostViewControllerTest {
-
     @Test
     fun `When root has no presentations Then root is the topmost`() {
         val root = UIViewController(nibName = null, bundle = null)

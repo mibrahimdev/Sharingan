@@ -26,7 +26,6 @@ import dev.sharingan.jsonEscape
  * so same-named overloads would clash on the JVM.)
  */
 internal abstract class ProtocolDescriptor<E : SharinganEvent> {
-
     abstract val protocol: Protocol
 
     /** `requests` / `messages` / `operations` — the column-header noun. */
@@ -42,13 +41,19 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
     abstract val searchPlaceholder: String
 
     /** Chip matching; `"all"` is handled by the caller before dispatch. */
-    protected abstract fun chipMatches(event: E, chipKey: String): Boolean
+    protected abstract fun chipMatches(
+        event: E,
+        chipKey: String,
+    ): Boolean
 
     /** Strings the search box matches against; nulls are skipped. */
     protected abstract fun searchHaystack(event: E): List<String?>
 
     /** Everything a row or detail title needs, resolved once per event. */
-    protected abstract fun present(colors: SharinganColors, event: E): EventPresentation
+    protected abstract fun present(
+        colors: SharinganColors,
+        event: E,
+    ): EventPresentation
 
     /** One-line text for the capture notification's expanded ticker. */
     protected abstract fun ticker(event: E): String
@@ -77,12 +82,17 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
     @Suppress("UNCHECKED_CAST")
     private fun typed(event: SharinganEvent): E = event as E
 
-    fun matchesChip(event: SharinganEvent, chipKey: String): Boolean = chipMatches(typed(event), chipKey)
+    fun matchesChip(
+        event: SharinganEvent,
+        chipKey: String,
+    ): Boolean = chipMatches(typed(event), chipKey)
 
     fun haystack(event: SharinganEvent): List<String?> = searchHaystack(typed(event))
 
-    fun presentation(colors: SharinganColors, event: SharinganEvent): EventPresentation =
-        present(colors, typed(event))
+    fun presentation(
+        colors: SharinganColors,
+        event: SharinganEvent,
+    ): EventPresentation = present(colors, typed(event))
 
     fun tickerLine(event: SharinganEvent): String = ticker(typed(event))
 
@@ -100,17 +110,26 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
     // ── shared fragment helpers for implementations ─────────────
 
     /** Adds a raw JSON value if non-null. */
-    protected fun MutableList<Pair<String, String>>.put(name: String, raw: String?) {
+    protected fun MutableList<Pair<String, String>>.put(
+        name: String,
+        raw: String?,
+    ) {
         raw?.let { add(name to it) }
     }
 
     /** Adds an escaped JSON string value if non-null. */
-    protected fun MutableList<Pair<String, String>>.putString(name: String, value: String?) {
+    protected fun MutableList<Pair<String, String>>.putString(
+        name: String,
+        value: String?,
+    ) {
         value?.let { add(name to "\"${jsonEscape(it)}\"") }
     }
 
     /** Fenced body section for agent Markdown; ```json when it looks like JSON. */
-    protected fun StringBuilder.appendBodySection(title: String, body: String) {
+    protected fun StringBuilder.appendBodySection(
+        title: String,
+        body: String,
+    ) {
         val looksJson = body.trimStart().firstOrNull() in setOf('{', '[')
         appendLine()
         appendLine("### $title")
@@ -121,15 +140,17 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
 }
 
 /** The one exhaustive event → descriptor mapping in the codebase. */
-internal fun descriptorOf(event: SharinganEvent): ProtocolDescriptor<*> = when (event) {
-    is HttpEvent -> HttpDescriptor
-    is MqttEvent -> MqttDescriptor
-    is BleEvent -> BleDescriptor
-}
+internal fun descriptorOf(event: SharinganEvent): ProtocolDescriptor<*> =
+    when (event) {
+        is HttpEvent -> HttpDescriptor
+        is MqttEvent -> MqttDescriptor
+        is BleEvent -> BleDescriptor
+    }
 
 /** Tab-level lookup for concerns keyed by [Protocol] (chips, noun) rather than by event. */
-internal fun descriptorOf(protocol: Protocol): ProtocolDescriptor<*> = when (protocol) {
-    Protocol.HTTP -> HttpDescriptor
-    Protocol.MQTT -> MqttDescriptor
-    Protocol.BLE -> BleDescriptor
-}
+internal fun descriptorOf(protocol: Protocol): ProtocolDescriptor<*> =
+    when (protocol) {
+        Protocol.HTTP -> HttpDescriptor
+        Protocol.MQTT -> MqttDescriptor
+        Protocol.BLE -> BleDescriptor
+    }

@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.sqldelight) apply false
     alias(libs.plugins.kotlinSerialization) apply false
+    alias(libs.plugins.ktlint) apply false
     // Applied to the root project: BCV injects apiDump/apiCheck into every
     // subproject and guards the committed public-API dumps (issue #11).
     alias(libs.plugins.binaryCompatibilityValidator)

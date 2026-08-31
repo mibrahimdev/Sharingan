@@ -30,40 +30,48 @@ import dev.sharingan.jsonEscape
 
 /** Everything Sharingan knows about HTTP events. */
 internal object HttpDescriptor : ProtocolDescriptor<HttpEvent>() {
-
     override val protocol: Protocol = Protocol.HTTP
     override val eventNoun: String = "requests"
     override val tabIcon: ImageVector = SharinganIcons.Globe
     override val searchPlaceholder: String = "Filter path, status, header…"
 
-    override val chips: List<FilterChipSpec> = listOf(
-        FilterChipSpec("all", "All"),
-        FilterChipSpec("err", "Errors"),
-        FilterChipSpec("2xx", "2xx"),
-        FilterChipSpec("get", "GET"),
-        FilterChipSpec("post", "POST"),
-    )
+    override val chips: List<FilterChipSpec> =
+        listOf(
+            FilterChipSpec("all", "All"),
+            FilterChipSpec("err", "Errors"),
+            FilterChipSpec("2xx", "2xx"),
+            FilterChipSpec("get", "GET"),
+            FilterChipSpec("post", "POST"),
+        )
 
-    override fun chipMatches(event: HttpEvent, chipKey: String): Boolean = when (chipKey) {
-        "err" -> event.isFailure
-        "2xx" -> (event.statusCode ?: 0) in 200..299
-        "get" -> event.method.equals("GET", ignoreCase = true)
-        "post" -> event.method.equals("POST", ignoreCase = true)
-        else -> true
-    }
+    override fun chipMatches(
+        event: HttpEvent,
+        chipKey: String,
+    ): Boolean =
+        when (chipKey) {
+            "err" -> event.isFailure
+            "2xx" -> (event.statusCode ?: 0) in 200..299
+            "get" -> event.method.equals("GET", ignoreCase = true)
+            "post" -> event.method.equals("POST", ignoreCase = true)
+            else -> true
+        }
 
-    override fun searchHaystack(event: HttpEvent): List<String?> = buildList {
-        add(event.method)
-        add(event.url)
-        add(event.statusCode?.toString())
-        add(event.error)
-        add(event.requestBody)
-        add(event.responseBody)
-        event.requestHeaders.forEach { add("${it.first}: ${it.second}") }
-        event.responseHeaders.forEach { add("${it.first}: ${it.second}") }
-    }
+    override fun searchHaystack(event: HttpEvent): List<String?> =
+        buildList {
+            add(event.method)
+            add(event.url)
+            add(event.statusCode?.toString())
+            add(event.error)
+            add(event.requestBody)
+            add(event.responseBody)
+            event.requestHeaders.forEach { add("${it.first}: ${it.second}") }
+            event.responseHeaders.forEach { add("${it.first}: ${it.second}") }
+        }
 
-    override fun present(colors: SharinganColors, event: HttpEvent): EventPresentation {
+    override fun present(
+        colors: SharinganColors,
+        event: HttpEvent,
+    ): EventPresentation {
         val statusTint = colors.httpStatusTint(event.statusCode)
         return EventPresentation(
             lead = event.method.uppercase(),
@@ -81,30 +89,30 @@ internal object HttpDescriptor : ProtocolDescriptor<HttpEvent>() {
         )
     }
 
-    override fun ticker(event: HttpEvent): String =
-        "${event.method} ${event.path} → ${event.statusCode ?: "ERR"}"
+    override fun ticker(event: HttpEvent): String = "${event.method} ${event.path} → ${event.statusCode ?: "ERR"}"
 
-    override fun markdown(event: HttpEvent): String = buildString {
-        appendLine("## ${event.method} ${event.path}")
-        val status = event.statusCode?.toString() ?: "—"
-        val duration = event.durationMillis?.let { " · **${it}ms**" } ?: ""
-        val size = event.responseSizeBytes?.let { " · ${formatBytes(it)}" } ?: ""
-        appendLine("**Status:** $status$duration$size")
-        appendLine("**Host:** ${event.host}")
-        event.error?.let { appendLine("**Error:** $it") }
-        if (event.requestHeaders.isNotEmpty()) {
-            appendLine()
-            appendLine("### Request headers")
-            event.requestHeaders.forEach { (k, v) -> appendLine("- $k: $v") }
-        }
-        if (event.responseHeaders.isNotEmpty()) {
-            appendLine()
-            appendLine("### Response headers")
-            event.responseHeaders.forEach { (k, v) -> appendLine("- $k: $v") }
-        }
-        event.requestBody?.let { appendBodySection("Request body", it) }
-        event.responseBody?.let { appendBodySection("Response body", it) }
-    }.trimEnd()
+    override fun markdown(event: HttpEvent): String =
+        buildString {
+            appendLine("## ${event.method} ${event.path}")
+            val status = event.statusCode?.toString() ?: "—"
+            val duration = event.durationMillis?.let { " · **${it}ms**" } ?: ""
+            val size = event.responseSizeBytes?.let { " · ${formatBytes(it)}" } ?: ""
+            appendLine("**Status:** $status$duration$size")
+            appendLine("**Host:** ${event.host}")
+            event.error?.let { appendLine("**Error:** $it") }
+            if (event.requestHeaders.isNotEmpty()) {
+                appendLine()
+                appendLine("### Request headers")
+                event.requestHeaders.forEach { (k, v) -> appendLine("- $k: $v") }
+            }
+            if (event.responseHeaders.isNotEmpty()) {
+                appendLine()
+                appendLine("### Response headers")
+                event.responseHeaders.forEach { (k, v) -> appendLine("- $k: $v") }
+            }
+            event.requestBody?.let { appendBodySection("Request body", it) }
+            event.responseBody?.let { appendBodySection("Response body", it) }
+        }.trimEnd()
 
     override fun summary(event: HttpEvent): String {
         val status = event.statusCode?.toString() ?: (event.error ?: "—")
@@ -112,26 +120,27 @@ internal object HttpDescriptor : ProtocolDescriptor<HttpEvent>() {
         return "${event.method} ${event.path} → $status$duration"
     }
 
-    override fun fields(event: HttpEvent): List<Pair<String, String>> = buildList {
-        putString("protocol", "http")
-        putString("method", event.method)
-        putString("url", event.url)
-        put("statusCode", event.statusCode?.toString())
-        put("durationMillis", event.durationMillis?.toString())
-        put("requestHeaders", headersJson(event.requestHeaders))
-        put("responseHeaders", headersJson(event.responseHeaders))
-        putString("requestBody", event.requestBody)
-        putString("responseBody", event.responseBody)
-        putString("contentType", event.contentType)
-        put("responseSizeBytes", event.responseSizeBytes?.toString())
-        put(
-            "timing",
-            event.timing.takeIf { it.isNotEmpty() }?.joinToString(
-                prefix = "[",
-                postfix = "]",
-            ) { "{\"label\": \"${jsonEscape(it.label)}\", \"millis\": ${it.millis}}" },
-        )
-    }
+    override fun fields(event: HttpEvent): List<Pair<String, String>> =
+        buildList {
+            putString("protocol", "http")
+            putString("method", event.method)
+            putString("url", event.url)
+            put("statusCode", event.statusCode?.toString())
+            put("durationMillis", event.durationMillis?.toString())
+            put("requestHeaders", headersJson(event.requestHeaders))
+            put("responseHeaders", headersJson(event.responseHeaders))
+            putString("requestBody", event.requestBody)
+            putString("responseBody", event.responseBody)
+            putString("contentType", event.contentType)
+            put("responseSizeBytes", event.responseSizeBytes?.toString())
+            put(
+                "timing",
+                event.timing.takeIf { it.isNotEmpty() }?.joinToString(
+                    prefix = "[",
+                    postfix = "]",
+                ) { "{\"label\": \"${jsonEscape(it.label)}\", \"millis\": ${it.millis}}" },
+            )
+        }
 
     private fun headersJson(headers: List<Pair<String, String>>): String? {
         if (headers.isEmpty()) return null
@@ -179,7 +188,12 @@ internal object HttpDescriptor : ProtocolDescriptor<HttpEvent>() {
 }
 
 @Composable
-private fun SummaryCard(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
+private fun SummaryCard(
+    label: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalSharinganColors.current
     Column(
         modifier

@@ -3,25 +3,28 @@ package dev.sharingan.ui
 /** Token classes the JSON body view colors differently. */
 internal enum class JsonTokenType { KEY, STRING, NUMBER, LITERAL, PUNCT, WS }
 
-internal data class JsonToken(val type: JsonTokenType, val text: String)
+internal data class JsonToken(
+    val type: JsonTokenType,
+    val text: String,
+)
 
 /**
  * Parses [raw] and re-emits it as a pretty-printed (2-space indented) token
  * stream for syntax coloring. Returns `null` when [raw] is not valid JSON so
  * callers can fall back to plain text.
  */
-internal fun prettyJsonTokens(raw: String): List<JsonToken>? = try {
-    val parser = JsonParser(raw)
-    parser.parseValue(indent = 0)
-    parser.skipWhitespace()
-    if (parser.position < raw.length) null else parser.tokens
-} catch (_: JsonParseException) {
-    null
-}
+internal fun prettyJsonTokens(raw: String): List<JsonToken>? =
+    try {
+        val parser = JsonParser(raw)
+        parser.parseValue(indent = 0)
+        parser.skipWhitespace()
+        if (parser.position < raw.length) null else parser.tokens
+    } catch (_: JsonParseException) {
+        null
+    }
 
 /** Pretty-printed JSON text, or `null` when [raw] is not valid JSON. */
-internal fun prettyJson(raw: String): String? =
-    prettyJsonTokens(raw)?.joinToString("") { it.text }
+internal fun prettyJson(raw: String): String? = prettyJsonTokens(raw)?.joinToString("") { it.text }
 
 private class JsonParseException : Exception() {
     companion object {
@@ -30,7 +33,9 @@ private class JsonParseException : Exception() {
     }
 }
 
-private class JsonParser(private val source: String) {
+private class JsonParser(
+    private val source: String,
+) {
     var position: Int = 0
         private set
     val tokens = mutableListOf<JsonToken>()
@@ -43,7 +48,10 @@ private class JsonParser(private val source: String) {
         while (position < source.length && source[position].isWhitespace()) position++
     }
 
-    private fun emit(type: JsonTokenType, text: String) {
+    private fun emit(
+        type: JsonTokenType,
+        text: String,
+    ) {
         tokens += JsonToken(type, text)
     }
 

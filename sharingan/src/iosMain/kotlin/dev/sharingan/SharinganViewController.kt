@@ -5,14 +5,14 @@ import androidx.compose.ui.window.ComposeUIViewController
 import dev.sharingan.internal.topmostViewController
 import dev.sharingan.ui.LocalStripTopInset
 import dev.sharingan.ui.SharinganScreen
-import kotlin.experimental.ExperimentalObjCName
-import kotlin.native.ObjCName
 import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
+import kotlin.experimental.ExperimentalObjCName
+import kotlin.native.ObjCName
 
 /**
  * The Sharingan log browser as a `UIViewController` — embed or push it
@@ -61,11 +61,12 @@ private fun composeVc(stripTopInset: Boolean): UIViewController =
 @OptIn(ExperimentalObjCName::class)
 public fun presentSharingan(animated: Boolean = true) {
     dispatch_async(dispatch_get_main_queue()) {
-        val root = UIApplication.sharedApplication.connectedScenes
-            .filterIsInstance<UIWindowScene>()
-            .flatMap { it.windows.filterIsInstance<UIWindow>() }
-            .firstOrNull { it.keyWindow }
-            ?.rootViewController ?: return@dispatch_async
+        val root =
+            UIApplication.sharedApplication.connectedScenes
+                .filterIsInstance<UIWindowScene>()
+                .flatMap { it.windows.filterIsInstance<UIWindow>() }
+                .firstOrNull { it.keyWindow }
+                ?.rootViewController ?: return@dispatch_async
         val top = topmostViewController(root)
         // Guard: UIKit silently swallows a present() while another
         // presentation/dismissal is already in flight; make the no-op explicit.

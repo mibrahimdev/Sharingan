@@ -21,68 +21,72 @@ import dev.sharingan.ui.protocolCountsLine
  * separators, tool metadata).
  */
 public object SharinganExport {
-
     /** Structured Markdown for one event — the "Copy for AI agent" format. */
-    public fun agentMarkdown(event: SharinganEvent): String =
-        descriptorOf(event).agentMarkdown(event)
+    public fun agentMarkdown(event: SharinganEvent): String = descriptorOf(event).agentMarkdown(event)
 
     /** Structured Markdown for a whole session: a count header, then one section per event. */
-    public fun agentMarkdown(events: List<SharinganEvent>): String = buildString {
-        appendLine("# Sharingan session export")
-        appendLine(countsLine(events))
-        for (event in events) {
-            appendLine()
-            appendLine("---")
-            appendLine()
-            append(agentMarkdown(event))
-            appendLine()
-        }
-    }.trimEnd()
+    public fun agentMarkdown(events: List<SharinganEvent>): String =
+        buildString {
+            appendLine("# Sharingan session export")
+            appendLine(countsLine(events))
+            for (event in events) {
+                appendLine()
+                appendLine("---")
+                appendLine()
+                append(agentMarkdown(event))
+                appendLine()
+            }
+        }.trimEnd()
 
     /** A reproducible `curl` command for [event]. Redacted headers stay masked. */
-    public fun curl(event: HttpEvent): String = buildString {
-        append("curl -X ").append(event.method)
-        append(" ").append(shellQuote(event.url))
-        for ((name, value) in event.requestHeaders) {
-            append(" \\\n  -H ").append(shellQuote("$name: $value"))
+    public fun curl(event: HttpEvent): String =
+        buildString {
+            append("curl -X ").append(event.method)
+            append(" ").append(shellQuote(event.url))
+            for ((name, value) in event.requestHeaders) {
+                append(" \\\n  -H ").append(shellQuote("$name: $value"))
+            }
+            event.requestBody?.let { body ->
+                append(" \\\n  --data ").append(shellQuote(body))
+            }
         }
-        event.requestBody?.let { body ->
-            append(" \\\n  --data ").append(shellQuote(body))
-        }
-    }
 
     /** Machine-readable JSON for one event. */
     public fun json(event: SharinganEvent): String = eventJson(event, indent = "")
 
     /** Machine-readable JSON for a whole session, wrapped with tool metadata. */
-    public fun sessionJson(events: List<SharinganEvent>): String = buildString {
-        appendLine("{")
-        appendLine("  \"tool\": \"sharingan\",")
-        appendLine("  \"eventCount\": ${events.size},")
-        appendLine("  \"events\": [")
-        events.forEachIndexed { index, event ->
-            append(eventJson(event, indent = "    "))
-            appendLine(if (index < events.lastIndex) "," else "")
+    public fun sessionJson(events: List<SharinganEvent>): String =
+        buildString {
+            appendLine("{")
+            appendLine("  \"tool\": \"sharingan\",")
+            appendLine("  \"eventCount\": ${events.size},")
+            appendLine("  \"events\": [")
+            events.forEachIndexed { index, event ->
+                append(eventJson(event, indent = "    "))
+                appendLine(if (index < events.lastIndex) "," else "")
+            }
+            appendLine("  ]")
+            append("}")
         }
-        appendLine("  ]")
-        append("}")
-    }
 
     /** Human-readable digest: a count header, then one line per event. */
-    public fun summary(events: List<SharinganEvent>): String = buildString {
-        appendLine("Sharingan session · ${countsLine(events)}")
-        for (event in events) {
-            append(formatClockTime(event.timestampMillis)).append("  ")
-            appendLine(descriptorOf(event).summaryLine(event))
-        }
-    }.trimEnd()
+    public fun summary(events: List<SharinganEvent>): String =
+        buildString {
+            appendLine("Sharingan session · ${countsLine(events)}")
+            for (event in events) {
+                append(formatClockTime(event.timestampMillis)).append("  ")
+                appendLine(descriptorOf(event).summaryLine(event))
+            }
+        }.trimEnd()
 
     // ── session assembly ─────────────────────────────────────────
 
-    private fun countsLine(events: List<SharinganEvent>): String =
-        "${events.size} events · ${protocolCountsLine(events)}"
+    private fun countsLine(events: List<SharinganEvent>): String = "${events.size} events · ${protocolCountsLine(events)}"
 
-    private fun eventJson(event: SharinganEvent, indent: String): String {
+    private fun eventJson(
+        event: SharinganEvent,
+        indent: String,
+    ): String {
         val fields = mutableListOf<Pair<String, String>>()
         fields += "id" to "\"${jsonEscape(event.id)}\""
         fields += "timestampMillis" to event.timestampMillis.toString()

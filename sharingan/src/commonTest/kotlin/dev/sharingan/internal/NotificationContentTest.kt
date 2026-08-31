@@ -11,27 +11,29 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class NotificationContentTest {
-
-    private val http = HttpEvent(
-        id = "h1",
-        timestampMillis = 0,
-        method = "GET",
-        url = "https://api.acme.com/state",
-        statusCode = 200,
-    )
-    private val mqtt = MqttEvent(
-        id = "m1",
-        timestampMillis = 1,
-        direction = MqttDirection.PUBLISH,
-        topic = "devices/4471/telemetry",
-    )
-    private val ble = BleEvent(
-        id = "b1",
-        timestampMillis = 2,
-        operation = BleOperation.NOTIFY,
-        device = "HR-9F",
-        characteristic = "Heart Rate Measurement",
-    )
+    private val http =
+        HttpEvent(
+            id = "h1",
+            timestampMillis = 0,
+            method = "GET",
+            url = "https://api.acme.com/state",
+            statusCode = 200,
+        )
+    private val mqtt =
+        MqttEvent(
+            id = "m1",
+            timestampMillis = 1,
+            direction = MqttDirection.PUBLISH,
+            topic = "devices/4471/telemetry",
+        )
+    private val ble =
+        BleEvent(
+            id = "b1",
+            timestampMillis = 2,
+            operation = BleOperation.NOTIFY,
+            device = "HR-9F",
+            characteristic = "Heart Rate Measurement",
+        )
 
     @Test
     fun `When there are no events Then there is nothing to post`() {

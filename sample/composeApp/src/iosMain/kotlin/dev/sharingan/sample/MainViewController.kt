@@ -6,6 +6,7 @@ import platform.UIKit.UIViewController
 
 /** Entry point for the iOS sample's `UIViewControllerRepresentable`. */
 @Suppress("unused", "FunctionName")
-fun MainViewController(): UIViewController = ComposeUIViewController {
-    App(openSharingan = { presentSharingan() })
-}
+fun MainViewController(): UIViewController =
+    ComposeUIViewController {
+        App(openSharingan = { presentSharingan() })
+    }
