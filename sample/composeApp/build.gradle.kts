@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.ktlint)
 }
 
 kotlin {
@@ -31,12 +32,10 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(libs.ktor.client.core)
-            // Demo traffic is served by MockEngine so the sample works offline
-            // and mirrors the design's deterministic IoT data.
+            // Demo traffic via MockEngine so the sample works offline with deterministic IoT data.
             implementation(libs.ktor.client.mock)
 
-            // KMP no-op swap pattern: `-Psharingan.noop` builds the sample
-            // against the no-op artifact, proving API parity and zero UI payload.
+            // `-Psharingan.noop` builds against the no-op twin: proves API parity, zero UI payload.
             if (providers.gradleProperty("sharingan.noop").isPresent) {
                 implementation(project(":sharingan-noop"))
             } else {
@@ -46,8 +45,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
         }
-        // Capture-notification E2E (needs the real app + zero-setup init):
-        // ./gradlew :sample:composeApp:connectedDebugAndroidTest
+        // Capture-notification E2E: ./gradlew :sample:composeApp:connectedDebugAndroidTest
         androidInstrumentedTest.dependencies {
             implementation(libs.junit)
             implementation(libs.androidx.test.runner)
@@ -59,12 +57,21 @@ kotlin {
 
 android {
     namespace = "dev.sharingan.sample"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "dev.sharingan.sample"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.android.targetSdk
+                .get()
+                .toInt()
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

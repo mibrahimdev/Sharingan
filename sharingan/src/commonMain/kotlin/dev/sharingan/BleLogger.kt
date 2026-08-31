@@ -10,15 +10,22 @@ import dev.sharingan.internal.currentTimeMillis
  * callbacks (Kable, RxAndroidBle, CoreBluetooth bridges…). See the project
  * README for adapter recipes.
  */
-public class BleLogger(private val store: SharinganStore) {
-
+public class BleLogger(
+    private val store: SharinganStore,
+) {
     /** Records a successful connection to [device]. */
-    public fun connect(device: String, error: String? = null) {
+    public fun connect(
+        device: String,
+        error: String? = null,
+    ) {
         record(BleOperation.CONNECT, device, error = error)
     }
 
     /** Records a disconnection from [device]. */
-    public fun disconnect(device: String, error: String? = null) {
+    public fun disconnect(
+        device: String,
+        error: String? = null,
+    ) {
         record(BleOperation.DISCONNECT, device, error = error)
     }
 
@@ -93,7 +100,7 @@ public class BleLogger(private val store: SharinganStore) {
                 payload = value,
                 sizeBytes = value?.encodeToByteArray()?.size?.toLong(),
                 error = error,
-            )
+            ),
         )
     }
 }

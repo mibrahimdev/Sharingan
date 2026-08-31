@@ -120,6 +120,18 @@ binary-compatibility-validator. The golden dumps are committed at
 - `./gradlew apiCheck` — fails if the public API drifts from the committed dumps. Runs on every PR (`.github/workflows/api-check.yml`, macOS so the iOS klib targets build).
 - `./gradlew apiDump` — regenerate the dumps after an *intentional* API change, then commit the updated `api/*.api` files in the same PR.
 
+## Comments policy
+
+Code comments are for *why*, never *what*. Default to **no comment**; write code that explains itself.
+
+- DO NOT add comments narrating the obvious (`// increment counter`, `// call the API`, section-divider banners).
+- DO NOT add "AI notes": comments narrating the change you just made (`// added null check`, `// new implementation`, `// refactored for clarity`), restating the function name, or addressing the reviewer.
+- DO NOT leave TODO/FIXME without an issue reference (`// TODO(#NN):`).
+- Comments ARE justified for: a non-obvious invariant or trade-off, a workaround with its bug/issue link, a pointer to the primary source (spec/ADR), or a public-API contract the signature can't express — prefer KDoc for that.
+- If a comment only survives because the code is hard to read, fix the code instead.
+- NO multi-line comments: a `//` run of two or more adjacent lines, or a `/* ... */` block spanning lines, is flagged by ktlint (`sharingan-comments:no-multi-line-comment`). If it doesn't fit on one line, shorten it — or if it is documentation, write KDoc (`/** ... */`), which is exempt.
+- ktlint enforces the mechanics (wrapping, `//` over `/* */`, no multi-line comments); this policy is enforced by review.
+
 ## Agent skills
 
 ### Issue tracker

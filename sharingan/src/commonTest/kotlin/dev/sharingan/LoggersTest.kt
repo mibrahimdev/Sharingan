@@ -7,7 +7,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 internal class LoggersTest {
-
     @Test
     fun `When an MQTT publish is logged Then a PUBLISH event with topic qos and payload is stored`() {
         val store = SharinganStore(capacity = 10)
@@ -27,7 +26,10 @@ internal class LoggersTest {
         val mqtt = MqttLogger(store)
         mqtt.received(topic = "devices/4471/commands/reboot", payload = "{}", qos = 1)
         mqtt.subscribed(topicFilter = "devices/4471/commands/#", qos = 1)
-        val dirs = store.events.value.filterIsInstance<MqttEvent>().map { it.direction }
+        val dirs =
+            store.events.value
+                .filterIsInstance<MqttEvent>()
+                .map { it.direction }
         assertEquals(listOf(MqttDirection.RECEIVE, MqttDirection.SUBSCRIBE), dirs)
     }
 

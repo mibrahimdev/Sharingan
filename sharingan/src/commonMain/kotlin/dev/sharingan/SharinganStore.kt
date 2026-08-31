@@ -33,8 +33,11 @@ public class SharinganStore(
         if (!_isRecording.value) return
         _events.update { current ->
             val appended = current + event
-            if (appended.size > capacity) appended.subList(appended.size - capacity, appended.size).toList()
-            else appended
+            if (appended.size > capacity) {
+                appended.subList(appended.size - capacity, appended.size).toList()
+            } else {
+                appended
+            }
         }
     }
 

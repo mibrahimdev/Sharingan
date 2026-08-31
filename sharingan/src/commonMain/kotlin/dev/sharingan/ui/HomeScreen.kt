@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -142,7 +141,10 @@ private fun HomeHeader(
 }
 
 @Composable
-internal fun RecordingPill(recording: Boolean, onToggle: () -> Unit) {
+internal fun RecordingPill(
+    recording: Boolean,
+    onToggle: () -> Unit,
+) {
     val colors = LocalSharinganColors.current
     val pulse = rememberInfiniteTransition(label = "rec")
     val pulseAlpha by pulse.animateFloat(
@@ -308,19 +310,24 @@ private fun FilterChips(
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = MonoFont,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(if (on) colors.text else colors.surface)
-                    .border(1.dp, if (on) Color.Transparent else colors.border, RoundedCornerShape(20.dp))
-                    .clickable { onSelect(chip.key) }
-                    .padding(horizontal = 11.dp, vertical = 4.dp),
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (on) colors.text else colors.surface)
+                        .border(1.dp, if (on) Color.Transparent else colors.border, RoundedCornerShape(20.dp))
+                        .clickable { onSelect(chip.key) }
+                        .padding(horizontal = 11.dp, vertical = 4.dp),
             )
         }
     }
 }
 
 @Composable
-private fun ColumnHeader(count: Int, noun: String, recording: Boolean) {
+private fun ColumnHeader(
+    count: Int,
+    noun: String,
+    recording: Boolean,
+) {
     val colors = LocalSharinganColors.current
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 7.dp),
@@ -358,7 +365,10 @@ private fun EmptyState(hasAny: Boolean) {
 
 /** Compact single-line row — the design's default "Terminal" density. */
 @Composable
-internal fun TerminalRow(event: SharinganEvent, onOpen: () -> Unit) {
+internal fun TerminalRow(
+    event: SharinganEvent,
+    onOpen: () -> Unit,
+) {
     val colors = LocalSharinganColors.current
     val p = presentationOf(colors, event)
     val isBle = protocolOf(event) == Protocol.BLE
@@ -436,23 +446,26 @@ internal fun HorizontalDivider(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(1.dp).background(colors.faint))
 }
 
-// ── Previews ─────────────────────────────────────────────────
-
 @Preview
 @Composable
 private fun HomeScreenContent_LightPreview() {
     SharinganTheme(darkTheme = false) {
         HomeScreenContent(
-            state = HomeUiState(
-                protocol = Protocol.HTTP,
-                counts = previewCounts(),
-                rows = PreviewData.http,
-                query = "",
-                chipKey = "all",
-                recording = true,
-            ),
-            onSelectProtocol = {}, onQueryChange = {}, onChipChange = {},
-            onToggleRecording = {}, onOpenEvent = {}, onShareAll = {},
+            state =
+                HomeUiState(
+                    protocol = Protocol.HTTP,
+                    counts = previewCounts(),
+                    rows = PreviewData.http,
+                    query = "",
+                    chipKey = "all",
+                    recording = true,
+                ),
+            onSelectProtocol = {},
+            onQueryChange = {},
+            onChipChange = {},
+            onToggleRecording = {},
+            onOpenEvent = {},
+            onShareAll = {},
         )
     }
 }
@@ -462,16 +475,21 @@ private fun HomeScreenContent_LightPreview() {
 private fun HomeScreenContent_DarkPreview() {
     SharinganTheme(darkTheme = true) {
         HomeScreenContent(
-            state = HomeUiState(
-                protocol = Protocol.MQTT,
-                counts = previewCounts(),
-                rows = PreviewData.mqtt,
-                query = "",
-                chipKey = "all",
-                recording = true,
-            ),
-            onSelectProtocol = {}, onQueryChange = {}, onChipChange = {},
-            onToggleRecording = {}, onOpenEvent = {}, onShareAll = {},
+            state =
+                HomeUiState(
+                    protocol = Protocol.MQTT,
+                    counts = previewCounts(),
+                    rows = PreviewData.mqtt,
+                    query = "",
+                    chipKey = "all",
+                    recording = true,
+                ),
+            onSelectProtocol = {},
+            onQueryChange = {},
+            onChipChange = {},
+            onToggleRecording = {},
+            onOpenEvent = {},
+            onShareAll = {},
         )
     }
 }
@@ -481,16 +499,21 @@ private fun HomeScreenContent_DarkPreview() {
 private fun HomeScreenContent_PausedEmptyPreview() {
     SharinganTheme(darkTheme = false) {
         HomeScreenContent(
-            state = HomeUiState(
-                protocol = Protocol.BLE,
-                counts = mapOf(),
-                rows = emptyList(),
-                query = "",
-                chipKey = "all",
-                recording = false,
-            ),
-            onSelectProtocol = {}, onQueryChange = {}, onChipChange = {},
-            onToggleRecording = {}, onOpenEvent = {}, onShareAll = {},
+            state =
+                HomeUiState(
+                    protocol = Protocol.BLE,
+                    counts = mapOf(),
+                    rows = emptyList(),
+                    query = "",
+                    chipKey = "all",
+                    recording = false,
+                ),
+            onSelectProtocol = {},
+            onQueryChange = {},
+            onChipChange = {},
+            onToggleRecording = {},
+            onOpenEvent = {},
+            onShareAll = {},
         )
     }
 }

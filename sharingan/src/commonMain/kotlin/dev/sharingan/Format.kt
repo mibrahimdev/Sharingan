@@ -21,28 +21,30 @@ private fun oneDecimal(value: Double): String {
 
 /** `PUB` / `RECV` / `SUB` — the compact labels used in rows and exports. */
 internal val MqttDirection.shortLabel: String
-    get() = when (this) {
-        MqttDirection.PUBLISH -> "PUB"
-        MqttDirection.RECEIVE -> "RECV"
-        MqttDirection.SUBSCRIBE -> "SUB"
-    }
+    get() =
+        when (this) {
+            MqttDirection.PUBLISH -> "PUB"
+            MqttDirection.RECEIVE -> "RECV"
+            MqttDirection.SUBSCRIBE -> "SUB"
+        }
 
 /** Escapes a string for embedding inside a JSON string literal. */
-internal fun jsonEscape(value: String): String = buildString(value.length + 8) {
-    for (ch in value) {
-        when (ch) {
-            '\\' -> append("\\\\")
-            '"' -> append("\\\"")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            else ->
-                if (ch < ' ') {
-                    append("\\u")
-                    append(ch.code.toString(16).padStart(4, '0'))
-                } else {
-                    append(ch)
-                }
+internal fun jsonEscape(value: String): String =
+    buildString(value.length + 8) {
+        for (ch in value) {
+            when (ch) {
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else ->
+                    if (ch < ' ') {
+                        append("\\u")
+                        append(ch.code.toString(16).padStart(4, '0'))
+                    } else {
+                        append(ch)
+                    }
+            }
         }
     }
-}

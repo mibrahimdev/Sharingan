@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
  * vibration, and updated in place.
  */
 internal object CaptureNotification {
-
     private const val CHANNEL_ID = "sharingan.capture"
     private const val NOTIFICATION_ID = 0x5EE1
     private var scope: CoroutineScope? = null
@@ -42,59 +41,69 @@ internal object CaptureNotification {
     /** Starts observing the store; first event posts the notification. */
     fun start(context: Context) {
         if (scope != null) return
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default).also { observer ->
-            observer.launch {
-                Sharingan.store.events
-                    .combine(Sharingan.store.isRecording) { events, recording -> events to recording }
-                    .conflate()
-                    .collect { (events, recording) ->
-                        if (enabled) post(context, events, recording)
-                    }
+        scope =
+            CoroutineScope(SupervisorJob() + Dispatchers.Default).also { observer ->
+                observer.launch {
+                    Sharingan.store.events
+                        .combine(Sharingan.store.isRecording) { events, recording -> events to recording }
+                        .conflate()
+                        .collect { (events, recording) ->
+                            if (enabled) post(context, events, recording)
+                        }
+                }
             }
-        }
     }
 
-    private fun post(context: Context, events: List<SharinganEvent>, recording: Boolean) {
+    private fun post(
+        context: Context,
+        events: List<SharinganEvent>,
+        recording: Boolean,
+    ) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (!manager.areNotificationsEnabled()) return
         val content = notificationContentOf(events, recording) ?: return
         ensureChannel(manager)
 
-        val openIntent = PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, SharinganActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val toggleIntent = PendingIntent.getBroadcast(
-            context,
-            1,
-            Intent(context, SharinganNotificationReceiver::class.java)
-                .setAction(SharinganNotificationReceiver.ACTION_TOGGLE_RECORDING),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val openIntent =
+            PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, SharinganActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        val toggleIntent =
+            PendingIntent.getBroadcast(
+                context,
+                1,
+                Intent(context, SharinganNotificationReceiver::class.java)
+                    .setAction(SharinganNotificationReceiver.ACTION_TOGGLE_RECORDING),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
         @Suppress("DEPRECATION")
         val base =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(context, CHANNEL_ID)
-            else Notification.Builder(context)
-        val builder = base
-            .setSmallIcon(R.drawable.sharingan_ic_notification)
-            .setContentTitle(content.title)
-            .setContentText(content.countsLine)
-            .setStyle(Notification.BigTextStyle().bigText(content.expandedText))
-            .setContentIntent(openIntent)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .addAction(
-                Notification.Action.Builder(null, content.actionLabel, toggleIntent).build(),
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, CHANNEL_ID)
+            } else {
+                Notification.Builder(context)
+            }
+        val builder =
+            base
+                .setSmallIcon(R.drawable.sharingan_ic_notification)
+                .setContentTitle(content.title)
+                .setContentText(content.countsLine)
+                .setStyle(Notification.BigTextStyle().bigText(content.expandedText))
+                .setContentIntent(openIntent)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .addAction(
+                    Notification.Action.Builder(null, content.actionLabel, toggleIntent).build(),
+                )
 
         try {
             manager.notify(NOTIFICATION_ID, builder.build())
         } catch (_: Exception) {
-            // Missing POST_NOTIFICATIONS or any notification failure must never
-            // crash the host app; capture continues silently.
+            // Notification failures (incl. missing POST_NOTIFICATIONS) must never crash the host app; capture continues.
         }
     }
 
@@ -116,7 +125,10 @@ internal object CaptureNotification {
 
 /** Handles the notification's Pause/Resume action. */
 public class SharinganNotificationReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         if (intent.action == ACTION_TOGGLE_RECORDING) {
             Sharingan.setRecording(!Sharingan.isRecording.value)
         }

@@ -7,44 +7,44 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class SharinganExportTest {
+    private val httpEvent =
+        HttpEvent(
+            id = "h1",
+            timestampMillis = 0L,
+            method = "GET",
+            url = "https://api.acme-iot.com/api/v2/devices/4471/state",
+            statusCode = 200,
+            durationMillis = 142,
+            requestHeaders = listOf("Authorization" to "••••", "Accept" to "application/json"),
+            responseHeaders = listOf("Content-Type" to "application/json"),
+            responseBody = """{"deviceId":4471,"online":true}""",
+            contentType = "application/json",
+            responseSizeBytes = 4300,
+        )
 
-    private val httpEvent = HttpEvent(
-        id = "h1",
-        timestampMillis = 0L,
-        method = "GET",
-        url = "https://api.acme-iot.com/api/v2/devices/4471/state",
-        statusCode = 200,
-        durationMillis = 142,
-        requestHeaders = listOf("Authorization" to "••••", "Accept" to "application/json"),
-        responseHeaders = listOf("Content-Type" to "application/json"),
-        responseBody = """{"deviceId":4471,"online":true}""",
-        contentType = "application/json",
-        responseSizeBytes = 4300,
-    )
+    private val mqttEvent =
+        MqttEvent(
+            id = "m1",
+            timestampMillis = 0L,
+            direction = MqttDirection.PUBLISH,
+            topic = "devices/4471/telemetry",
+            qos = 1,
+            retained = false,
+            payload = """{"temp":23.4}""",
+            payloadSizeBytes = 13,
+        )
 
-    private val mqttEvent = MqttEvent(
-        id = "m1",
-        timestampMillis = 0L,
-        direction = MqttDirection.PUBLISH,
-        topic = "devices/4471/telemetry",
-        qos = 1,
-        retained = false,
-        payload = """{"temp":23.4}""",
-        payloadSizeBytes = 13,
-    )
-
-    private val bleEvent = BleEvent(
-        id = "b1",
-        timestampMillis = 0L,
-        operation = BleOperation.NOTIFY,
-        device = "HR-Monitor-9F",
-        characteristic = "Heart Rate Measurement",
-        uuid = "0x2A37",
-        payload = """{"bpm":72}""",
-        sizeBytes = 8,
-    )
-
-    // ── agent markdown: single event ─────────────────────────────
+    private val bleEvent =
+        BleEvent(
+            id = "b1",
+            timestampMillis = 0L,
+            operation = BleOperation.NOTIFY,
+            device = "HR-Monitor-9F",
+            characteristic = "Heart Rate Measurement",
+            uuid = "0x2A37",
+            payload = """{"bpm":72}""",
+            sizeBytes = 8,
+        )
 
     @Test
     fun `When an HTTP event is exported as agent markdown Then it has heading status host headers and body fence`() {
@@ -82,8 +82,6 @@ internal class SharinganExportTest {
         assertContains(md, "**Error:** connect timeout")
     }
 
-    // ── agent markdown: session ──────────────────────────────────
-
     @Test
     fun `When a session is exported as agent markdown Then it has a header with counts and one section per event`() {
         val md = SharinganExport.agentMarkdown(listOf(httpEvent, mqttEvent, bleEvent))
@@ -94,8 +92,6 @@ internal class SharinganExportTest {
         assertContains(md, "## MQTT PUB devices/4471/telemetry")
         assertContains(md, "## BLE NOTIFY Heart Rate Measurement")
     }
-
-    // ── cURL ─────────────────────────────────────────────────────
 
     @Test
     fun `When an HTTP event is exported as cURL Then method url and headers are present`() {
@@ -108,9 +104,10 @@ internal class SharinganExportTest {
 
     @Test
     fun `Given a request body When exported as cURL Then a data flag carries the body`() {
-        val curl = SharinganExport.curl(
-            httpEvent.copy(method = "POST", requestBody = """{"cmd":"reboot"}""")
-        )
+        val curl =
+            SharinganExport.curl(
+                httpEvent.copy(method = "POST", requestBody = """{"cmd":"reboot"}"""),
+            )
         assertContains(curl, "curl -X POST")
         assertContains(curl, "--data '{\"cmd\":\"reboot\"}'")
     }
@@ -120,8 +117,6 @@ internal class SharinganExportTest {
         val curl = SharinganExport.curl(httpEvent.copy(method = "POST", requestBody = "it's"))
         assertContains(curl, """--data 'it'\''s'""")
     }
-
-    // ── JSON ─────────────────────────────────────────────────────
 
     @Test
     fun `When an HTTP event is exported as JSON Then protocol fields are present and strings are escaped`() {
@@ -140,8 +135,6 @@ internal class SharinganExportTest {
         assertContains(json, "\"protocol\": \"mqtt\"")
         assertContains(json, "\"protocol\": \"ble\"")
     }
-
-    // ── byte formatting ──────────────────────────────────────────
 
     @Test
     fun `When byte counts are formatted Then they render like the design rows`() {

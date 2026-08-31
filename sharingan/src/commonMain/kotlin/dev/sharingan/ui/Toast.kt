@@ -28,7 +28,10 @@ import androidx.compose.ui.unit.sp
 
 /** The design's confirmation pill ("Copied for agent ✓"), bottom-centered. */
 @Composable
-internal fun SharinganToast(message: String?, modifier: Modifier = Modifier) {
+internal fun SharinganToast(
+    message: String?,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalSharinganColors.current
     // Keep the last text visible while the pill animates out.
     var lastMessage by remember { mutableStateOf("") }

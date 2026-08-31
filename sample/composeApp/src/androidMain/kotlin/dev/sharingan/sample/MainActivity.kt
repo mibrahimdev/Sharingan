@@ -11,7 +11,6 @@ import dev.sharingan.Sharingan
 import dev.sharingan.show
 
 class MainActivity : ComponentActivity() {
-
     private val requestNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 

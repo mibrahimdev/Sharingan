@@ -30,7 +30,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class CaptureNotificationE2eTest {
-
     // POST_NOTIFICATIONS exists only on API 33+; below that the grant list is empty.
     @get:Rule
     val grantNotifications: GrantPermissionRule =
@@ -47,12 +46,19 @@ class CaptureNotificationE2eTest {
             val capturing = awaitNotification(titlePrefix = "Sharingan — Capturing")
             assertNotNull("capture notification was never posted", capturing)
 
-            val text = capturing!!.notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+            val text =
+                capturing!!
+                    .notification.extras
+                    .getCharSequence(Notification.EXTRA_TEXT)
+                    .toString()
             assertTrue(
                 "counters line malformed: $text",
                 text.matches(Regex("""HTTP \d+ · MQTT \d+ · BLE \d+""")),
             )
-            val bigText = capturing.notification.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()
+            val bigText =
+                capturing.notification.extras
+                    .getCharSequence(Notification.EXTRA_BIG_TEXT)
+                    .toString()
             assertTrue("expanded ticker missing: $bigText", bigText.lines().size >= 2)
 
             try {
@@ -71,14 +77,19 @@ class CaptureNotificationE2eTest {
         titlePrefix: String,
         timeoutMillis: Long = 15_000,
     ): StatusBarNotification? {
-        val manager = ApplicationProvider.getApplicationContext<Context>()
-            .getSystemService(NotificationManager::class.java)
+        val manager =
+            ApplicationProvider
+                .getApplicationContext<Context>()
+                .getSystemService(NotificationManager::class.java)
         val deadline = System.currentTimeMillis() + timeoutMillis
         while (System.currentTimeMillis() < deadline) {
-            manager.activeNotifications.firstOrNull { posted ->
-                posted.notification.extras.getCharSequence(Notification.EXTRA_TITLE)
-                    ?.toString()?.startsWith(titlePrefix) == true
-            }?.let { return it }
+            manager.activeNotifications
+                .firstOrNull { posted ->
+                    posted.notification.extras
+                        .getCharSequence(Notification.EXTRA_TITLE)
+                        ?.toString()
+                        ?.startsWith(titlePrefix) == true
+                }?.let { return it }
             Thread.sleep(250)
         }
         return null

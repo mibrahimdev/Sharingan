@@ -5,10 +5,10 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.ktlint)
 }
 
-// Maven coordinate only — Kotlin packages and the Android namespace stay
-// `dev.sharingan(.noop)`. See :sharingan for the rationale (design decision 1a).
+// Maven coordinate only — Kotlin packages/namespace stay dev.sharingan(.noop); see :sharingan (design decision 1a).
 group = "io.github.mibrahimdev"
 version = libs.versions.sharingan.get()
 
@@ -34,8 +34,7 @@ kotlin {
     sourceSets {
         all { languageSettings.optIn("kotlin.experimental.ExperimentalObjCName") }
         commonMain.dependencies {
-            // Mirrors the real artifact's API surface (StateFlow, Ktor plugin
-            // types) with no Compose/UI payload — release builds carry ~nothing.
+            // Mirrors the real API surface (StateFlow, Ktor plugin types) with no Compose/UI payload.
             api(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.core)
         }
@@ -47,10 +46,16 @@ kotlin {
 
 android {
     namespace = "dev.sharingan.noop"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 
     compileOptions {
@@ -61,9 +66,7 @@ android {
 
 mavenPublishing {
     publishToMavenCentral()
-    // signAllPublications() is the default for real publishes (local + CI). The
-    // `-PlocalPublishNoSign` flag disables it for offline POM verification where
-    // no GPG key is available (real signing is provisioned in a separate issue).
+    // signAllPublications() is the default; -PlocalPublishNoSign disables it for offline POM verification (no GPG key).
     if (!providers.gradleProperty("localPublishNoSign").isPresent) {
         signAllPublications()
     }
@@ -72,7 +75,7 @@ mavenPublishing {
     pom {
         name.set("Sharingan (no-op)")
         description.set(
-            "Inert release replacement for Sharingan — same API, zero runtime cost."
+            "Inert release replacement for Sharingan — same API, zero runtime cost.",
         )
         url.set("https://mibrahimdev.github.io/Sharingan/")
         licenses {

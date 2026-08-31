@@ -29,7 +29,6 @@ public data class BleEvent internal constructor(
     public val sizeBytes: Long? = null,
     override val error: String? = null,
 ) : SharinganEvent {
-
     /** Failures are explicit errors or [BleOperation.ERROR] operations. */
     override val isFailure: Boolean get() = error != null || operation == BleOperation.ERROR
 }

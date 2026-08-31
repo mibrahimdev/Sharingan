@@ -10,8 +10,9 @@ import dev.sharingan.internal.currentTimeMillis
  * client's callbacks (one line per hook). See the project README for adapter
  * recipes.
  */
-public class MqttLogger(private val store: SharinganStore) {
-
+public class MqttLogger(
+    private val store: SharinganStore,
+) {
     /** Records an outgoing publish. */
     public fun publish(
         topic: String,
@@ -34,7 +35,10 @@ public class MqttLogger(private val store: SharinganStore) {
     }
 
     /** Records an established subscription. [topicFilter] may contain wildcards. */
-    public fun subscribed(topicFilter: String, qos: Int = 0) {
+    public fun subscribed(
+        topicFilter: String,
+        qos: Int = 0,
+    ) {
         record(MqttDirection.SUBSCRIBE, topicFilter, payload = null, qos = qos, retained = false, error = null)
     }
 
@@ -57,7 +61,7 @@ public class MqttLogger(private val store: SharinganStore) {
                 payload = payload,
                 payloadSizeBytes = payload?.encodeToByteArray()?.size?.toLong(),
                 error = error,
-            )
+            ),
         )
     }
 }

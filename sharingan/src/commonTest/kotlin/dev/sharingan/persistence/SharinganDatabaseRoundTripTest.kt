@@ -4,7 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 internal class SharinganDatabaseRoundTripTest {
-
     @Test
     fun `Given a session and an event inserted When read back Then all fields round trip`() {
         val db = SharinganDatabase(createTestDriver())

@@ -24,15 +24,15 @@ import java.util.Locale
  * and again in [onDestroy] — leaving the host's locale untouched.
  */
 public class SharinganActivity : ComponentActivity() {
-
     private var hostLocales: LocaleList? = null
 
     override fun attachBaseContext(newBase: Context) {
         hostLocales = LocaleList.getDefault()
-        val config = Configuration(newBase.resources.configuration).apply {
-            setLocale(Locale.ENGLISH)
-            setLayoutDirection(Locale.ENGLISH)
-        }
+        val config =
+            Configuration(newBase.resources.configuration).apply {
+                setLocale(Locale.ENGLISH)
+                setLayoutDirection(Locale.ENGLISH)
+            }
         // Non-mutating: createConfigurationContext, never resources.updateConfiguration.
         super.attachBaseContext(newBase.createConfigurationContext(config))
         hostLocales?.let(LocaleList::setDefault)

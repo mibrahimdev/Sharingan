@@ -10,11 +10,10 @@ plugins {
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.ktlint)
 }
 
-// Maven coordinate only — Kotlin packages and the Android namespace stay
-// `dev.sharingan`. Central auto-verifies `io.github.mibrahimdev` against the
-// GitHub repo, so no domain ownership is required (design decision 1/1a).
+// Maven coordinate only — Central auto-verifies io.github.mibrahimdev against the GitHub repo (design decision 1/1a).
 group = "io.github.mibrahimdev"
 version = libs.versions.sharingan.get()
 
@@ -36,13 +35,10 @@ kotlin {
         }
     }
 
-    // Same baseName in :sharingan and :sharingan-noop — pure-Swift consumers
-    // swap debug/noop per build configuration by search path, so
-    // `import Sharingan` must resolve identically in both.
+    // Same baseName as :sharingan-noop so pure-Swift consumers swap debug/noop and `import Sharingan` resolves identically.
     val sharinganXCFramework = XCFramework("Sharingan")
     iosSimulatorArm64 {
-        // The default KGP simulator id may not exist in newer Xcodes; pin to
-        // a device present on this machine (xcrun simctl list devices).
+        // The default KGP simulator id may not exist in newer Xcodes; pin to a device present here (xcrun simctl list devices).
         testRuns.configureEach { deviceId = "iPhone 17 Pro" }
     }
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
@@ -58,8 +54,7 @@ kotlin {
         commonMain.dependencies {
             // StateFlow types appear in the public API surface.
             api(libs.kotlinx.coroutines.core)
-            // The Ktor plugin ships in the core artifact (Chucker model) so the
-            // release no-op swap stays a single dependency substitution.
+            // Ships in the core artifact (Chucker model) so the release no-op swap stays a single dependency substitution.
             implementation(libs.ktor.client.core)
             // Flight-recorder persistence (issue #27 / #49): DTO JSON codec.
             implementation(libs.kotlinx.serialization.json)
@@ -88,8 +83,7 @@ kotlin {
         iosTest.dependencies {
             implementation(libs.sqldelight.native.driver)
         }
-        // On-device UI tests (JetBrains Compose Multiplatform test API, run as
-        // Android instrumented tests): ./gradlew :sharingan:connectedDebugAndroidTest
+        // On-device UI tests (CMP test API): ./gradlew :sharingan:connectedDebugAndroidTest
         androidInstrumentedTest.dependencies {
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.uiTest)
@@ -101,10 +95,16 @@ kotlin {
 
 android {
     namespace = "dev.sharingan"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -121,9 +121,7 @@ dependencies {
 
 mavenPublishing {
     publishToMavenCentral()
-    // signAllPublications() is the default for real publishes (local + CI). The
-    // `-PlocalPublishNoSign` flag disables it for offline POM verification where
-    // no GPG key is available (real signing is provisioned in a separate issue).
+    // signAllPublications() is the default; -PlocalPublishNoSign disables it for offline POM verification (no GPG key).
     if (!providers.gradleProperty("localPublishNoSign").isPresent) {
         signAllPublications()
     }
@@ -132,7 +130,7 @@ mavenPublishing {
     pom {
         name.set("Sharingan")
         description.set(
-            "On-device debug logger and HTTP/MQTT/BLE inspector for Android & Kotlin Multiplatform."
+            "On-device debug logger and HTTP/MQTT/BLE inspector for Android & Kotlin Multiplatform.",
         )
         url.set("https://mibrahimdev.github.io/Sharingan/")
         licenses {

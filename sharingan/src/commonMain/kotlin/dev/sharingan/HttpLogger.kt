@@ -56,14 +56,17 @@ public class HttpLogger(
                 responseSizeBytes = responseSizeBytes,
                 timing = timing,
                 error = error,
-            )
+            ),
         )
     }
 
     private fun redact(headers: List<Pair<String, String>>): List<Pair<String, String>> =
         headers.map { (name, value) ->
-            if (redactedHeaders.any { it.equals(name, ignoreCase = true) }) name to REDACTED_VALUE
-            else name to value
+            if (redactedHeaders.any { it.equals(name, ignoreCase = true) }) {
+                name to REDACTED_VALUE
+            } else {
+                name to value
+            }
         }
 
     public companion object {

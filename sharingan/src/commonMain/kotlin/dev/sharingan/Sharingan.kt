@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
  * API with empty implementations, so calls compile identically and ship no UI.
  */
 public object Sharingan {
-
     /** The shared event buffer backing the notification and the log browser. */
     public val store: SharinganStore = SharinganStore()
 

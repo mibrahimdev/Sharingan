@@ -1,8 +1,8 @@
 package dev.sharingan
 
+import platform.UIKit.UIViewController
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
-import platform.UIKit.UIViewController
 
 /**
  * No-op twin: returns an empty view controller so Swift call sites compile
