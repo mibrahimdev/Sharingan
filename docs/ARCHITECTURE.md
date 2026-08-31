@@ -105,7 +105,7 @@ All deliberate, all verifiable:
 - **Streaming never consumed.** `shouldReadBody()` refuses `text/event-stream` and anything non-textual (`isTextual()` whitelist: `text/*`, `*json`, `*xml`, form-urlencoded) — SSE and binary downloads keep streaming for the caller.
 - **Transport failures recorded then rethrown untouched** (catch block in the plugin's `on(Send)`): the app's error handling is never altered.
 - **Notification failures swallowed.** `manager.notify()` is wrapped in `try/catch(Exception)` in `CaptureNotification.post()`. This is a scar, not paranoia: commit `8550bbd` records a real crash where the API-26 version guard left the builder chain (`.setSmallIcon` etc.) attached only to the `else` branch, so API 26+ posted an icon-less notification and the resulting `IllegalArgumentException` from a background flow collector killed the host app. Rule extracted: **a debug tool must never crash the host app.**
-- **Memory-only ring buffer.** No disk, no network. Process death clears everything (a stated property, see §6).
+- **Memory-only ring buffer, mirrored on disk.** The ring buffer never touches the network; each event is mirrored to the SQLite flight recorder (§5.4). Process death clears the ring, not the recorder (a stated property, see §6).
 
 ### 2.5 UI architecture
 
@@ -234,7 +234,7 @@ Add `sample/iosApp/` (standard KMP template: `iosApp.xcodeproj` + SwiftUI `Conte
 - **`SharinganScreen()` exists only in the debug artifact.** It is the one asymmetry in the API surface (deliberate: a noop composable would drag Compose into the release artifact). Never reference it from code compiled against the noop; use `Sharingan.show(context)` / `SharinganViewController()`, which *are* mirrored. Documented in [AGENTS.md](../AGENTS.md) and README §"Release builds".
 - **DND hides the notification.** The channel is `IMPORTANCE_LOW` and the notification silent (`CaptureNotification.ensureChannel`), so Do Not Disturb suppresses it on most devices. `Sharingan.show(context)` always works.
 - **`POST_NOTIFICATIONS` must be requested by the host app** on Android 13+. The library only *declares* the permission ([sharingan/src/androidMain/AndroidManifest.xml](../sharingan/src/androidMain/AndroidManifest.xml)); the sample shows the request ([MainActivity.kt](../sample/composeApp/src/androidMain/kotlin/dev/sharingan/sample/MainActivity.kt)). Without the grant, capture still works (`areNotificationsEnabled()` check + swallowed `notify()` failures), there's just no notification.
-- **Buffer lost on process death** — memory-only by design; capacity is per-store (`SharinganStore(capacity = …)`).
+- **Ring buffer lost on process death** — memory-only by design, so the ring resets each process; the flight recorder survives (§5.4). Capacity is per-store (`SharinganStore(capacity = …)`).
 - **The notification observer starts once per process** (`CaptureNotification.start` guards on `scope != null`) and survives for the process lifetime; `setNotificationEnabled(false)` cancels the posted notification but keeps observing.
 - **`HttpEvent.host/path` come from a naive string split** (`splitUrl` in `HttpEvent.kt`), not a URL parser — fine for display, don't reuse it for anything semantic.
 - **Request-body capture only sees `OutgoingContent.ByteArrayContent`** (`outgoingBodyText` in `ktor/SharinganKtor.kt`); streamed/chunked request bodies are not captured (responses: textual-only whitelist, SSE never read).

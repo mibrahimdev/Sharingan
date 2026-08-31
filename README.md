@@ -84,7 +84,7 @@ No init code — a manifest-merged ContentProvider starts Sharingan automaticall
 - **Detail view per event** — timing waterfall, request/response headers (secrets redacted at capture), syntax-colored JSON bodies, QoS/retain flags, GATT operations and decoded values.
 - **Share sheet built for agents** — "Copy for AI agent" produces structured Markdown an LLM parses reliably; cURL, raw JSON and the system share sheet are one tap away.
 - **Zero release impact** — swap in the `sharingan-noop` artifact: identical API, captures nothing, ships no UI.
-- **Memory-only** — an in-memory ring buffer (default 300 events); nothing is ever written to disk.
+- **Ring buffer, not a database** — events live in an in-memory ring buffer (default 300 events) mirrored to an on-device SQLite flight recorder (debug builds only); bodies are never written to disk.
 - **Minimal** — no image assets, no icon fonts, no bundled typefaces, no DI, no navigation library. The capture core depends only on coroutines (+ Ktor when you use the plugin).
 
 Requirements: Android API 24+, iOS arm64 + simulator arm64, Ktor 3.x for the HTTP plugin.
@@ -336,7 +336,7 @@ Sharingan.clear()                // drop everything
 Sharingan.setNotificationEnabled(false)  // Android: opt out of the notification
 ```
 
-`SharinganStore(capacity)` overrides the default 300-event ring (memory-only; process death clears it). Loggers are thread-safe, callable from any thread.
+`SharinganStore(capacity)` overrides the default 300-event ring (memory-only; process death clears the ring, not the flight recorder). Loggers are thread-safe, callable from any thread.
 
 ## Release builds: what "no effect" means
 
