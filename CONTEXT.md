@@ -19,7 +19,6 @@ _Avoid_: handler, strategy, adapter (reserved for things satisfying an interface
 
 **Capture**:
 The act of recording an Event into the Store, via a Logger or the Ktor plugin. Header redaction happens at capture — secrets never enter the Store, and redaction applies before disk too.
-
 _Avoid_: logging, tracking, interception
 
 **Flight Recorder**:
@@ -31,7 +30,7 @@ A per-Protocol capture entry point (`Sharingan.http`, `Sharingan.mqtt`, `Sharing
 _Avoid_: tracker, recorder
 
 **Run**:
-One process lifetime — the Flight Recorder groups all Events captured in a process under a single session row.
+One process lifetime — the Flight Recorder groups all Events captured in a process under a single `session` row.
 _Avoid_: session (reserved for the v2 epic)
 
 **Store**:
