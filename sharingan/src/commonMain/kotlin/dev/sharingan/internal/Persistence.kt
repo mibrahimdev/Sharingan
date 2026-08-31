@@ -23,23 +23,33 @@ internal object Persistence {
 
     fun start(store: SharinganStore = Sharingan.store) {
         if (!started.compareAndSet(false, true)) return
-        controller = PersistenceController(::toRow).also {
-            it.start()
-            store.onRecord = { event -> it.submit(event) }
+        controller = PersistenceController(::toRow).also { ctrl ->
+            ctrl.start()
+            store.onRecord = { event -> ctrl.submit(event) }
+            store.onClear = { ctrl.clear() }
         }
     }
 }
 
 internal val json = Json { encodeDefaults = true }
 
+// Bodies stay in memory only — the flight-recorder design defaults to
+// persistBodies = false. EventDto keeps the fields so a later slice can add
+// the opt-in flag on this path.
 internal fun toRow(event: SharinganEvent): EventRow = EventRow(
     rawId = event.id,
     timestampMillis = event.timestampMillis,
     type = event.typeName(),
     isFailure = event.isFailure,
     hostOrTopic = event.hostOrTopic(),
-    payloadJson = json.encodeToString(EventDto.serializer(), EventDto.fromEvent(event)),
+    payloadJson = json.encodeToString(EventDto.serializer(), EventDto.fromEvent(event).withoutBodies()),
 )
+
+private fun EventDto.withoutBodies(): EventDto = when (this) {
+    is HttpDto -> copy(requestBody = null, responseBody = null)
+    is MqttDto -> copy(payload = null)
+    is BleDto -> copy(payload = null)
+}
 
 private fun SharinganEvent.typeName(): String = when (this) {
     is HttpEvent -> "HTTP"

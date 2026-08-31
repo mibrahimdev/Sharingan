@@ -92,6 +92,19 @@ internal class SharinganStoreTest {
     }
 
     @Test
+    fun `Given an onClear seam When the store is cleared Then the seam is invoked`() {
+        val store = SharinganStore(capacity = 10)
+        var cleared = 0
+        store.onClear = { cleared++ }
+
+        store.record(event("a"))
+        store.clear()
+
+        assertEquals(1, cleared)
+        assertTrue(store.events.value.isEmpty())
+    }
+
+    @Test
     fun `Given many producers recording concurrently When all complete Then no event is lost or duplicated`() =
         runTest {
             val producers = 16
@@ -120,8 +133,6 @@ internal class SharinganStoreTest {
                 }
             assertEquals(expected, ids.toSet())
         }
-        assertEquals(expected, ids.toSet())
-    }
 
     @Test
     fun `When persistence is off Then record keeps its behavior and onRecord stays null`() {

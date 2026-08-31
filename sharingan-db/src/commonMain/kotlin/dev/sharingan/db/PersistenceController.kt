@@ -74,7 +74,7 @@ public class PersistenceController<T : Any> private constructor(
     )
 
     private val database = SharinganDatabase(driver)
-    private val channel = newEventChannel<T>(channelCapacity)
+    private val channel = newEventChannel<Command<T>>(channelCapacity)
 
     // AtomicReference so a racing stop() can't read a stale null and skip the join.
     private val flusherJob = AtomicReference<Job?>(null)
@@ -87,6 +87,9 @@ public class PersistenceController<T : Any> private constructor(
 
     /** Test seam: batch size after each committed transaction. */
     internal var onBatchFlushed: ((Int) -> Unit)? = null
+
+    /** Test seam: invoked after a clear's rows have been deleted. */
+    internal var onCleared: (() -> Unit)? = null
 
     private val flusherStarts = AtomicInt(0)
 
@@ -107,7 +110,19 @@ public class PersistenceController<T : Any> private constructor(
 
     /** Submits [event] to the flusher. Never blocks the caller. */
     public fun submit(event: T) {
-        channel.trySend(event)
+        channel.trySend(Command.Record(event))
+    }
+
+    /**
+     * Deletes every persisted row and discards whatever is still queued or
+     * held in the flusher's in-flight batch. Enqueued as a command on the same
+     * channel the writes travel on, so the single flusher coroutine applies it
+     * at an exact point in the write order — events recorded before [clear]
+     * are flushed first and then deleted (or discarded), events recorded after
+     * survive. No locks, no resurrection window.
+     */
+    public fun clear() {
+        channel.trySend(Command.ClearAll)
     }
 
     /**
@@ -138,7 +153,7 @@ public class PersistenceController<T : Any> private constructor(
         val batch = mutableListOf<T>()
         var deadline = 0L
         while (true) {
-            val event = if (batch.isEmpty()) {
+            val command: Command<T>? = if (batch.isEmpty()) {
                 try {
                     channel.receive()
                 } catch (e: ClosedReceiveChannelException) {
@@ -148,7 +163,7 @@ public class PersistenceController<T : Any> private constructor(
                 // Atomic receive-or-timeout; withTimeoutOrNull could prompt-cancel
                 // an already-taken element and lose it.
                 var closed = false
-                select<T?> {
+                select<Command<T>?> {
                     channel.onReceiveCatching { result ->
                         if (result.isClosed) {
                             closed = true
@@ -160,12 +175,19 @@ public class PersistenceController<T : Any> private constructor(
                     onTimeout(deadline - nowMillis()) { null }
                 }.also { if (closed) break }
             }
-            if (event == null) {
-                flush(batch)
-            } else {
-                if (batch.isEmpty()) deadline = nowMillis() + flushIntervalMillis
-                batch.add(event)
-                if (batch.size >= batchSize) flush(batch)
+            when (command) {
+                is Command.Record -> {
+                    val event = command.event
+                    if (batch.isEmpty()) deadline = nowMillis() + flushIntervalMillis
+                    batch.add(event)
+                    if (batch.size >= batchSize) flush(batch)
+                }
+                is Command.ClearAll -> {
+                    batch.clear()
+                    database.sharinganDatabaseQueries.deleteAllEvents()
+                    onCleared?.invoke()
+                }
+                null -> flush(batch)
             }
         }
         flush(batch) // drain the in-flight batch after the channel is closed
@@ -226,6 +248,13 @@ public class PersistenceController<T : Any> private constructor(
 // DROP_OLDEST keeps the crash-tail — the newest events matter most here.
 internal fun <T> newEventChannel(capacity: Int): Channel<T> =
     Channel(capacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+// Everything the flusher does — writes and clears — travels on one channel, so
+// the single flusher coroutine applies DB mutations in submission order.
+private sealed interface Command<out T> {
+    data class Record<T>(val event: T) : Command<T>
+    data object ClearAll : Command<Nothing>
+}
 
 // UUID, not timestamp+Random: the latter collides on Kotlin/Native under rapid calls.
 @OptIn(ExperimentalUuidApi::class)

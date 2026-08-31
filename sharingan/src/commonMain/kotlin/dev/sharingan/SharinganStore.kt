@@ -30,6 +30,15 @@ public class SharinganStore(
      */
     internal var onRecord: ((SharinganEvent) -> Unit)? = null
 
+    /**
+     * Internal persistence seam: invoked from [clear] so the persistence layer
+     * can drop the mirrored rows on disk too. `null` unless the flight-recorder
+     * persistence is wired up (see `dev.sharingan.db.PersistenceController`).
+     * Internal — never part of the public API, so :sharingan-noop mirrors
+     * nothing here.
+     */
+    internal var onClear: (() -> Unit)? = null
+
     /** All retained events, oldest first. */
     public val events: StateFlow<List<SharinganEvent>> = _events.asStateFlow()
 
@@ -58,6 +67,7 @@ public class SharinganStore(
     /** Removes all retained events. */
     public fun clear() {
         _events.value = emptyList()
+        onClear?.invoke()
     }
 
     public companion object {

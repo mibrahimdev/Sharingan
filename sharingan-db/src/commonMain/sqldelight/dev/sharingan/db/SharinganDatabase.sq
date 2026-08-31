@@ -42,3 +42,6 @@ SELECT * FROM event ORDER BY timestamp ASC;
 
 deleteSession:
 DELETE FROM session WHERE id = ?;
+
+deleteAllEvents:
+DELETE FROM event;

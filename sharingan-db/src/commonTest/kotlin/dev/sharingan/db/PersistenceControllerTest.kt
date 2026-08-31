@@ -186,6 +186,42 @@ internal class PersistenceControllerTest {
     }
 
     @Test
+    fun `Given a pending batch When clear is called Then no events are resurrected`() = runBlocking {
+        val driver = createTestDriver()
+        val controller = PersistenceController<EventRow>(
+            toRow = { it },
+            driver = driver,
+            batchSize = 100,
+            // Short deadline so flushed-1 lands; the pending events are queued
+            // behind ClearAll microseconds later, far ahead of the next deadline.
+            flushIntervalMillis = 100,
+        )
+        val firstFlush = CompletableDeferred<Unit>()
+        controller.onBatchFlushed = { firstFlush.complete(Unit) }
+        controller.start()
+
+        controller.submit(event("flushed-1"))
+        withTimeout(10_000) { firstFlush.await() }
+
+        // Queued but never flushed: under the batch size and far from the deadline.
+        controller.submit(event("pending-1"))
+        controller.submit(event("pending-2"))
+
+        val cleared = CompletableDeferred<Unit>()
+        controller.onCleared = { cleared.complete(Unit) }
+        controller.clear()
+        withTimeout(10_000) { cleared.await() }
+
+        // Drain the flusher: a resurrection would commit the pending batch now.
+        controller.stop()
+
+        val rows = SharinganDatabase(driver).sharinganDatabaseQueries.selectAllEvents().executeAsList()
+        assertEquals(0, rows.size, "clear must delete persisted rows and discard the pending batch")
+
+        controller.close()
+    }
+
+    @Test
     fun `Given a bounded channel When filled beyond capacity Then oldest are dropped and newest survive`() = runBlocking {
         val channel = newEventChannel<EventRow>(capacity = 4)
         (1..10).map { event("e$it") }.forEach { channel.trySend(it) }
