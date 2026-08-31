@@ -211,6 +211,9 @@ public class PersistenceController<T : Any> private constructor(
         } catch (t: Throwable) {
             // Reset the session in case its row rolled back with this transaction.
             if (isNewSession) sessionId = null
+            // ponytail: println is the whole reporting story — the project has no
+            // logging facility, and a debug-only recorder does not justify inventing
+            // one. Route this through a real logger if the library ever grows one.
             println("Sharingan persistence: dropped a batch of ${snapshot.size} events ($t)")
         }
     }

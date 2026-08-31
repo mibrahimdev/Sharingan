@@ -1,5 +1,6 @@
 package dev.sharingan
 
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +29,7 @@ public class SharinganStore(
      * (see `dev.sharingan.db.PersistenceController`). Internal — never
      * part of the public API, so :sharingan-noop mirrors nothing here.
      */
+    @Volatile
     internal var onRecord: ((SharinganEvent) -> Unit)? = null
 
     /**
@@ -37,6 +39,7 @@ public class SharinganStore(
      * Internal — never part of the public API, so :sharingan-noop mirrors
      * nothing here.
      */
+    @Volatile
     internal var onClear: (() -> Unit)? = null
 
     /** All retained events, oldest first. */

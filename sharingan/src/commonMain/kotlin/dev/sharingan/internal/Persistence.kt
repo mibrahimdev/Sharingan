@@ -15,19 +15,42 @@ import kotlinx.serialization.json.Json
 /**
  * Starts persistence once per process. The only caller is Android's
  * manifest-merged ContentProvider — there is no Kotlin call site to grep.
+ * [stop] tears the wiring down so a new lifecycle can start again.
+ *
+ * ponytail: not unit-tested. [start] builds a real driver, and on Android
+ * DriverFactory.create() needs the ContentProvider-installed Context, which a
+ * JVM unit test has none of. Covering this would mean either Robolectric or a
+ * controller-injection seam; neither is worth it for straight-line wiring.
+ * The persistence behaviour it wires is tested in :sharingan-db.
  */
 @OptIn(ExperimentalAtomicApi::class)
 internal object Persistence {
     private val started = AtomicBoolean(false)
     private var controller: PersistenceController<SharinganEvent>? = null
+    private var store: SharinganStore? = null
 
     fun start(store: SharinganStore = Sharingan.store) {
         if (!started.compareAndSet(false, true)) return
-        controller = PersistenceController(::toRow).also { ctrl ->
-            ctrl.start()
-            store.onRecord = { event -> ctrl.submit(event) }
-            store.onClear = { ctrl.clear() }
-        }
+        val controller = PersistenceController(::toRow)
+        // Wire the seams BEFORE the flusher starts: by the time an event can be
+        // accepted, the sink is complete. start() is lazy, but the ordering
+        // dependency should be encoded, not implied.
+        store.onRecord = { event -> controller.submit(event) }
+        store.onClear = { controller.clear() }
+        this.store = store
+        this.controller = controller
+        controller.start()
+    }
+
+    /** Unwires the seams and closes the controller; [start] may run again afterwards. */
+    suspend fun stop() {
+        val controller = controller ?: return
+        store?.onRecord = null
+        store?.onClear = null
+        store = null
+        this.controller = null
+        controller.close()
+        started.store(false)
     }
 }
 
