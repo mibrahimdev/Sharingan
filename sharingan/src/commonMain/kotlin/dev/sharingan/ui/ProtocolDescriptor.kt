@@ -105,8 +105,6 @@ internal abstract class ProtocolDescriptor<E : SharinganEvent> {
         Body(typed(event))
     }
 
-    // ── shared fragment helpers for implementations ─────────────
-
     /** Adds a raw JSON value if non-null. */
     protected fun MutableList<Pair<String, String>>.put(
         name: String,

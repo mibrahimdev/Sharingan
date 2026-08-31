@@ -79,8 +79,6 @@ public object SharinganExport {
             }
         }.trimEnd()
 
-    // ── session assembly ─────────────────────────────────────────
-
     private fun countsLine(events: List<SharinganEvent>): String = "${events.size} events · ${protocolCountsLine(events)}"
 
     private fun eventJson(

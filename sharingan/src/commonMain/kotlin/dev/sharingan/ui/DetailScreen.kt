@@ -141,7 +141,7 @@ internal fun BadgeChip(
     )
 }
 
-// ── shared section scaffolding (used by the ProtocolDescriptors) ──
+// Shared section scaffolding for the ProtocolDescriptors.
 
 @Composable
 internal fun Section(
@@ -256,8 +256,6 @@ private fun rememberAnnotatedJson(
             }
         }
     }
-
-// ── Previews ─────────────────────────────────────────────────
 
 @Preview
 @Composable

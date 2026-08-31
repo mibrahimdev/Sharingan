@@ -46,8 +46,6 @@ internal class SharinganExportTest {
             sizeBytes = 8,
         )
 
-    // ── agent markdown: single event ─────────────────────────────
-
     @Test
     fun `When an HTTP event is exported as agent markdown Then it has heading status host headers and body fence`() {
         val md = SharinganExport.agentMarkdown(httpEvent)
@@ -84,8 +82,6 @@ internal class SharinganExportTest {
         assertContains(md, "**Error:** connect timeout")
     }
 
-    // ── agent markdown: session ──────────────────────────────────
-
     @Test
     fun `When a session is exported as agent markdown Then it has a header with counts and one section per event`() {
         val md = SharinganExport.agentMarkdown(listOf(httpEvent, mqttEvent, bleEvent))
@@ -96,8 +92,6 @@ internal class SharinganExportTest {
         assertContains(md, "## MQTT PUB devices/4471/telemetry")
         assertContains(md, "## BLE NOTIFY Heart Rate Measurement")
     }
-
-    // ── cURL ─────────────────────────────────────────────────────
 
     @Test
     fun `When an HTTP event is exported as cURL Then method url and headers are present`() {
@@ -124,8 +118,6 @@ internal class SharinganExportTest {
         assertContains(curl, """--data 'it'\''s'""")
     }
 
-    // ── JSON ─────────────────────────────────────────────────────
-
     @Test
     fun `When an HTTP event is exported as JSON Then protocol fields are present and strings are escaped`() {
         val json = SharinganExport.json(httpEvent.copy(responseBody = "line1\n\"quoted\""))
@@ -143,8 +135,6 @@ internal class SharinganExportTest {
         assertContains(json, "\"protocol\": \"mqtt\"")
         assertContains(json, "\"protocol\": \"ble\"")
     }
-
-    // ── byte formatting ──────────────────────────────────────────
 
     @Test
     fun `When byte counts are formatted Then they render like the design rows`() {

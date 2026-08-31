@@ -97,7 +97,6 @@ internal fun ShareSheetBody(
             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
         )
 
-        // payload preview with a bottom fade
         Box(
             Modifier
                 .fillMaxWidth()

@@ -446,8 +446,6 @@ internal fun HorizontalDivider(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(1.dp).background(colors.faint))
 }
 
-// ── Previews ─────────────────────────────────────────────────
-
 @Preview
 @Composable
 private fun HomeScreenContent_LightPreview() {
