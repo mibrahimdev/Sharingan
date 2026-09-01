@@ -30,4 +30,5 @@ rootProject.name = "sharingan"
 include(":sharingan")
 include(":sharingan-noop")
 include(":ktlint-rules")
+include(":sharingan-db")
 include(":sample:composeApp")

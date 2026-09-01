@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.sqldelight)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.ktlint)
@@ -16,14 +15,6 @@ plugins {
 // Maven coordinate only — Central auto-verifies io.github.mibrahimdev against the GitHub repo (design decision 1/1a).
 group = "io.github.mibrahimdev"
 version = libs.versions.sharingan.get()
-
-sqldelight {
-    databases {
-        create("SharinganDatabase") {
-            packageName.set("dev.sharingan.persistence")
-        }
-    }
-}
 
 kotlin {
     explicitApi()
@@ -58,6 +49,8 @@ kotlin {
             implementation(libs.ktor.client.core)
             // Flight-recorder persistence (issue #27 / #49): DTO JSON codec.
             implementation(libs.kotlinx.serialization.json)
+            // On-device SQLDelight database; implementation-scoped so its generated types are not exported to consumers.
+            implementation(project(":sharingan-db"))
 
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -72,16 +65,12 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
-            implementation(libs.sqldelight.android.driver)
         }
         iosMain.dependencies {
-            implementation(libs.sqldelight.native.driver)
         }
         androidUnitTest.dependencies {
-            implementation(libs.sqldelight.sqlite.driver)
         }
         iosTest.dependencies {
-            implementation(libs.sqldelight.native.driver)
         }
         // On-device UI tests (CMP test API): ./gradlew :sharingan:connectedDebugAndroidTest
         androidInstrumentedTest.dependencies {

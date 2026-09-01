@@ -1,6 +1,6 @@
 # Sharingan — agent reference
 
-On-device debug logger for Kotlin Multiplatform (Android + iOS). Captures HTTP, MQTT and BLE traffic into an in-memory ring buffer (default 300 events, never persisted) and renders a log browser. This file is the complete public API; everything lives in the `dev.sharingan` package unless noted.
+On-device debug logger for Kotlin Multiplatform (Android + iOS). Captures HTTP, MQTT and BLE traffic into an in-memory ring buffer (default 300 events) mirrored to an on-device SQLite flight recorder — bodies are never written to disk — and renders a log browser. This file is the complete public API; everything lives in the `dev.sharingan` package unless noted.
 
 ## Artifacts
 
@@ -103,7 +103,7 @@ presentSharingan(animated: Boolean = true)  // presents over topmost VC, any thr
 ## Facts agents commonly need
 
 - Zero-setup init on Android via manifest-merged ContentProvider; no Application code.
-- Buffer is memory-only; process death clears it. Capacity via `SharinganStore(capacity)`.
+- Ring buffer is memory-only; process death clears it (the on-disk flight recorder survives). Bodies are never written to disk. Capacity via `SharinganStore(capacity)`.
 - The Ktor plugin rethrows transport failures untouched after recording them (statusCode null, error set).
 - Thread-safe: store updates are atomic CAS; loggers callable from any thread.
 - Min targets: Android API 24, iOS arm64 + simulator arm64. Requires Ktor 3.x for the plugin.

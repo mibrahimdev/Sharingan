@@ -84,6 +84,6 @@ jobs:
           echo "::notice title=Staged to Central Portal::Artifacts uploaded to a NEW deployment on the Central Portal and are NOT yet public."
           echo "Next: a maintainer must verify and release manually. See docs/RELEASING.md."
           echo "  1. Open https://central.sonatype.com/publishing/deployments"
-          echo "  2. Confirm io.github.mibrahimdev:sharingan and io.github.mibrahimdev:sharingan-noop are present, validated, and signed."
+          echo "  2. Confirm io.github.mibrahimdev:sharingan, io.github.mibrahimdev:sharingan-db, and io.github.mibrahimdev:sharingan-noop are present, validated, and signed."
           echo "  3. Click Publish on the deployment to release it to Central."
           echo "  4. Cut the matching GitHub Release for this tag."

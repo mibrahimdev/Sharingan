@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.concurrent.Volatile
 
 /**
  * In-memory ring buffer of captured [SharinganEvent]s.
@@ -22,6 +23,25 @@ public class SharinganStore(
     private val _events = MutableStateFlow<List<SharinganEvent>>(emptyList())
     private val _isRecording = MutableStateFlow(true)
 
+    /**
+     * Internal persistence seam: invoked with each accepted event after the
+     * CAS append. `null` unless the flight-recorder persistence is wired up
+     * (see `dev.sharingan.db.PersistenceController`). Internal — never
+     * part of the public API, so :sharingan-noop mirrors nothing here.
+     */
+    @Volatile
+    internal var onRecord: ((SharinganEvent) -> Unit)? = null
+
+    /**
+     * Internal persistence seam: invoked from [clear] so the persistence layer
+     * can drop the mirrored rows on disk too. `null` unless the flight-recorder
+     * persistence is wired up (see `dev.sharingan.db.PersistenceController`).
+     * Internal — never part of the public API, so :sharingan-noop mirrors
+     * nothing here.
+     */
+    @Volatile
+    internal var onClear: (() -> Unit)? = null
+
     /** All retained events, oldest first. */
     public val events: StateFlow<List<SharinganEvent>> = _events.asStateFlow()
 
@@ -39,6 +59,7 @@ public class SharinganStore(
                 appended
             }
         }
+        onRecord?.invoke(event)
     }
 
     /** Pauses (`false`) or resumes (`true`) capture. Paused events are dropped, not queued. */
@@ -49,6 +70,7 @@ public class SharinganStore(
     /** Removes all retained events. */
     public fun clear() {
         _events.value = emptyList()
+        onClear?.invoke()
     }
 
     public companion object {

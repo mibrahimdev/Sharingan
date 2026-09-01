@@ -284,6 +284,11 @@ final object dev.sharingan/SharinganExport { // dev.sharingan/SharinganExport|nu
     final fun summary(kotlin.collections/List<dev.sharingan/SharinganEvent>): kotlin/String // dev.sharingan/SharinganExport.summary|summary(kotlin.collections.List<dev.sharingan.SharinganEvent>){}[0]
 }
 
+final val dev.sharingan.internal/dev_sharingan_internal_BleDto_$serializer$stableprop // dev.sharingan.internal/dev_sharingan_internal_BleDto_$serializer$stableprop|#static{}dev_sharingan_internal_BleDto_$serializer$stableprop[0]
+final val dev.sharingan.internal/dev_sharingan_internal_HeaderDto_$serializer$stableprop // dev.sharingan.internal/dev_sharingan_internal_HeaderDto_$serializer$stableprop|#static{}dev_sharingan_internal_HeaderDto_$serializer$stableprop[0]
+final val dev.sharingan.internal/dev_sharingan_internal_HttpDto_$serializer$stableprop // dev.sharingan.internal/dev_sharingan_internal_HttpDto_$serializer$stableprop|#static{}dev_sharingan_internal_HttpDto_$serializer$stableprop[0]
+final val dev.sharingan.internal/dev_sharingan_internal_MqttDto_$serializer$stableprop // dev.sharingan.internal/dev_sharingan_internal_MqttDto_$serializer$stableprop|#static{}dev_sharingan_internal_MqttDto_$serializer$stableprop[0]
+final val dev.sharingan.internal/dev_sharingan_internal_TimingPhaseDto_$serializer$stableprop // dev.sharingan.internal/dev_sharingan_internal_TimingPhaseDto_$serializer$stableprop|#static{}dev_sharingan_internal_TimingPhaseDto_$serializer$stableprop[0]
 final val dev.sharingan.ktor/SharinganKtor // dev.sharingan.ktor/SharinganKtor|{}SharinganKtor[0]
     final fun <get-SharinganKtor>(): io.ktor.client.plugins.api/ClientPlugin<dev.sharingan.ktor/SharinganKtorConfig> // dev.sharingan.ktor/SharinganKtor.<get-SharinganKtor>|<get-SharinganKtor>(){}[0]
 final val dev.sharingan.ktor/dev_sharingan_ktor_SharinganKtorConfig$stableprop // dev.sharingan.ktor/dev_sharingan_ktor_SharinganKtorConfig$stableprop|#static{}dev_sharingan_ktor_SharinganKtorConfig$stableprop[0]
@@ -298,6 +303,11 @@ final val dev.sharingan/dev_sharingan_SharinganExport$stableprop // dev.sharinga
 final val dev.sharingan/dev_sharingan_SharinganStore$stableprop // dev.sharingan/dev_sharingan_SharinganStore$stableprop|#static{}dev_sharingan_SharinganStore$stableprop[0]
 final val dev.sharingan/dev_sharingan_TimingPhase$stableprop // dev.sharingan/dev_sharingan_TimingPhase$stableprop|#static{}dev_sharingan_TimingPhase$stableprop[0]
 
+final fun dev.sharingan.internal/dev_sharingan_internal_BleDto_$serializer$stableprop_getter(): kotlin/Int // dev.sharingan.internal/dev_sharingan_internal_BleDto_$serializer$stableprop_getter|dev_sharingan_internal_BleDto_$serializer$stableprop_getter(){}[0]
+final fun dev.sharingan.internal/dev_sharingan_internal_HeaderDto_$serializer$stableprop_getter(): kotlin/Int // dev.sharingan.internal/dev_sharingan_internal_HeaderDto_$serializer$stableprop_getter|dev_sharingan_internal_HeaderDto_$serializer$stableprop_getter(){}[0]
+final fun dev.sharingan.internal/dev_sharingan_internal_HttpDto_$serializer$stableprop_getter(): kotlin/Int // dev.sharingan.internal/dev_sharingan_internal_HttpDto_$serializer$stableprop_getter|dev_sharingan_internal_HttpDto_$serializer$stableprop_getter(){}[0]
+final fun dev.sharingan.internal/dev_sharingan_internal_MqttDto_$serializer$stableprop_getter(): kotlin/Int // dev.sharingan.internal/dev_sharingan_internal_MqttDto_$serializer$stableprop_getter|dev_sharingan_internal_MqttDto_$serializer$stableprop_getter(){}[0]
+final fun dev.sharingan.internal/dev_sharingan_internal_TimingPhaseDto_$serializer$stableprop_getter(): kotlin/Int // dev.sharingan.internal/dev_sharingan_internal_TimingPhaseDto_$serializer$stableprop_getter|dev_sharingan_internal_TimingPhaseDto_$serializer$stableprop_getter(){}[0]
 final fun dev.sharingan.ktor/dev_sharingan_ktor_SharinganKtorConfig$stableprop_getter(): kotlin/Int // dev.sharingan.ktor/dev_sharingan_ktor_SharinganKtorConfig$stableprop_getter|dev_sharingan_ktor_SharinganKtorConfig$stableprop_getter(){}[0]
 final fun dev.sharingan.ui/SharinganScreen(androidx.compose.ui/Modifier?, kotlin/Boolean, dev.sharingan/SharinganStore?, androidx.compose.runtime/Composer?, kotlin/Int, kotlin/Int) // dev.sharingan.ui/SharinganScreen|SharinganScreen(androidx.compose.ui.Modifier?;kotlin.Boolean;dev.sharingan.SharinganStore?;androidx.compose.runtime.Composer?;kotlin.Int;kotlin.Int){}[0]
 final fun dev.sharingan/SharinganViewController(): platform.UIKit/UIViewController // dev.sharingan/SharinganViewController|SharinganViewController(){}[0]

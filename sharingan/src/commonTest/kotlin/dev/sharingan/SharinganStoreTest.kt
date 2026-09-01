@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class SharinganStoreTest {
@@ -91,6 +92,19 @@ internal class SharinganStoreTest {
     }
 
     @Test
+    fun `Given an onClear seam When the store is cleared Then the seam is invoked`() {
+        val store = SharinganStore(capacity = 10)
+        var cleared = 0
+        store.onClear = { cleared++ }
+
+        store.record(event("a"))
+        store.clear()
+
+        assertEquals(1, cleared)
+        assertTrue(store.events.value.isEmpty())
+    }
+
+    @Test
     fun `Given many producers recording concurrently When all complete Then no event is lost or duplicated`() =
         runTest {
             val producers = 16
@@ -119,4 +133,53 @@ internal class SharinganStoreTest {
                 }
             assertEquals(expected, ids.toSet())
         }
+
+    @Test
+    fun `When persistence is off Then record keeps its behavior and onRecord stays null`() {
+        val store = SharinganStore(capacity = 10)
+        assertNull(store.onRecord)
+        store.record(event("a"))
+        store.record(event("b"))
+        assertEquals(listOf("a", "b"), store.events.value.map { it.id })
+        assertNull(store.onRecord)
+    }
+
+    @Test
+    fun `Given an onRecord seam When events are recorded Then the seam receives each event`() {
+        val store = SharinganStore(capacity = 10)
+        val forwarded = mutableListOf<String>()
+        store.onRecord = { forwarded += it.id }
+
+        store.record(event("a"))
+        store.record(event("b"))
+
+        assertEquals(listOf("a", "b"), store.events.value.map { it.id })
+        assertEquals(listOf("a", "b"), forwarded)
+    }
+
+    @Test
+    fun `Given an onRecord seam When recording is paused Then the seam receives nothing`() {
+        val store = SharinganStore(capacity = 10)
+        val forwarded = mutableListOf<String>()
+        store.onRecord = { forwarded += it.id }
+        store.setRecording(false)
+
+        store.record(event("a"))
+        store.record(event("b"))
+
+        assertTrue(store.events.value.isEmpty())
+        assertTrue(forwarded.isEmpty())
+    }
+
+    @Test
+    fun `Given an onRecord seam When the buffer evicts an event Then the evicted event was still forwarded`() {
+        val store = SharinganStore(capacity = 2)
+        val forwarded = mutableListOf<String>()
+        store.onRecord = { forwarded += it.id }
+
+        listOf("a", "b", "c").forEach { store.record(event(it)) }
+
+        assertEquals(listOf("b", "c"), store.events.value.map { it.id })
+        assertEquals(listOf("a", "b", "c"), forwarded)
+    }
 }

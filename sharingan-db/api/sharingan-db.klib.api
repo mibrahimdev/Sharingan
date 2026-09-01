@@ -1,0 +1,133 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.mibrahimdev:sharingan-db>
+abstract interface dev.sharingan.db/SharinganDatabase : app.cash.sqldelight/Transacter { // dev.sharingan.db/SharinganDatabase|null[0]
+    abstract val sharinganDatabaseQueries // dev.sharingan.db/SharinganDatabase.sharinganDatabaseQueries|{}sharinganDatabaseQueries[0]
+        abstract fun <get-sharinganDatabaseQueries>(): dev.sharingan.db/SharinganDatabaseQueries // dev.sharingan.db/SharinganDatabase.sharinganDatabaseQueries.<get-sharinganDatabaseQueries>|<get-sharinganDatabaseQueries>(){}[0]
+
+    final object Companion { // dev.sharingan.db/SharinganDatabase.Companion|null[0]
+        final val Schema // dev.sharingan.db/SharinganDatabase.Companion.Schema|{}Schema[0]
+            final fun <get-Schema>(): app.cash.sqldelight.db/SqlSchema<app.cash.sqldelight.db/QueryResult.Value<kotlin/Unit>> // dev.sharingan.db/SharinganDatabase.Companion.Schema.<get-Schema>|<get-Schema>(){}[0]
+
+        final fun invoke(app.cash.sqldelight.db/SqlDriver): dev.sharingan.db/SharinganDatabase // dev.sharingan.db/SharinganDatabase.Companion.invoke|invoke(app.cash.sqldelight.db.SqlDriver){}[0]
+    }
+}
+
+final class <#A: kotlin/Any> dev.sharingan.db/PersistenceController { // dev.sharingan.db/PersistenceController|null[0]
+    constructor <init>(kotlin/Function1<#A, dev.sharingan.db/EventRow>, kotlin/Int = ..., kotlin/Long = ...) // dev.sharingan.db/PersistenceController.<init>|<init>(kotlin.Function1<1:0,dev.sharingan.db.EventRow>;kotlin.Int;kotlin.Long){}[0]
+
+    final fun clear() // dev.sharingan.db/PersistenceController.clear|clear(){}[0]
+    final fun start() // dev.sharingan.db/PersistenceController.start|start(){}[0]
+    final fun submit(#A) // dev.sharingan.db/PersistenceController.submit|submit(1:0){}[0]
+    final suspend fun close() // dev.sharingan.db/PersistenceController.close|close(){}[0]
+    final suspend fun stop() // dev.sharingan.db/PersistenceController.stop|stop(){}[0]
+}
+
+final class dev.sharingan.db/Event { // dev.sharingan.db/Event|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/Long, kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?) // dev.sharingan.db/Event.<init>|<init>(kotlin.String;kotlin.String;kotlin.Long;kotlin.String;kotlin.Long;kotlin.String?;kotlin.String?){}[0]
+
+    final val host_or_topic // dev.sharingan.db/Event.host_or_topic|{}host_or_topic[0]
+        final fun <get-host_or_topic>(): kotlin/String? // dev.sharingan.db/Event.host_or_topic.<get-host_or_topic>|<get-host_or_topic>(){}[0]
+    final val id // dev.sharingan.db/Event.id|{}id[0]
+        final fun <get-id>(): kotlin/String // dev.sharingan.db/Event.id.<get-id>|<get-id>(){}[0]
+    final val is_failure // dev.sharingan.db/Event.is_failure|{}is_failure[0]
+        final fun <get-is_failure>(): kotlin/Long // dev.sharingan.db/Event.is_failure.<get-is_failure>|<get-is_failure>(){}[0]
+    final val payload_json // dev.sharingan.db/Event.payload_json|{}payload_json[0]
+        final fun <get-payload_json>(): kotlin/String? // dev.sharingan.db/Event.payload_json.<get-payload_json>|<get-payload_json>(){}[0]
+    final val session_id // dev.sharingan.db/Event.session_id|{}session_id[0]
+        final fun <get-session_id>(): kotlin/String // dev.sharingan.db/Event.session_id.<get-session_id>|<get-session_id>(){}[0]
+    final val timestamp // dev.sharingan.db/Event.timestamp|{}timestamp[0]
+        final fun <get-timestamp>(): kotlin/Long // dev.sharingan.db/Event.timestamp.<get-timestamp>|<get-timestamp>(){}[0]
+    final val type // dev.sharingan.db/Event.type|{}type[0]
+        final fun <get-type>(): kotlin/String // dev.sharingan.db/Event.type.<get-type>|<get-type>(){}[0]
+
+    final fun component1(): kotlin/String // dev.sharingan.db/Event.component1|component1(){}[0]
+    final fun component2(): kotlin/String // dev.sharingan.db/Event.component2|component2(){}[0]
+    final fun component3(): kotlin/Long // dev.sharingan.db/Event.component3|component3(){}[0]
+    final fun component4(): kotlin/String // dev.sharingan.db/Event.component4|component4(){}[0]
+    final fun component5(): kotlin/Long // dev.sharingan.db/Event.component5|component5(){}[0]
+    final fun component6(): kotlin/String? // dev.sharingan.db/Event.component6|component6(){}[0]
+    final fun component7(): kotlin/String? // dev.sharingan.db/Event.component7|component7(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/String? = ..., kotlin/String? = ...): dev.sharingan.db/Event // dev.sharingan.db/Event.copy|copy(kotlin.String;kotlin.String;kotlin.Long;kotlin.String;kotlin.Long;kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.sharingan.db/Event.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.sharingan.db/Event.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.sharingan.db/Event.toString|toString(){}[0]
+}
+
+final class dev.sharingan.db/EventRow { // dev.sharingan.db/EventRow|null[0]
+    constructor <init>(kotlin/String, kotlin/Long, kotlin/String, kotlin/Boolean, kotlin/String?, kotlin/String) // dev.sharingan.db/EventRow.<init>|<init>(kotlin.String;kotlin.Long;kotlin.String;kotlin.Boolean;kotlin.String?;kotlin.String){}[0]
+
+    final val hostOrTopic // dev.sharingan.db/EventRow.hostOrTopic|{}hostOrTopic[0]
+        final fun <get-hostOrTopic>(): kotlin/String? // dev.sharingan.db/EventRow.hostOrTopic.<get-hostOrTopic>|<get-hostOrTopic>(){}[0]
+    final val isFailure // dev.sharingan.db/EventRow.isFailure|{}isFailure[0]
+        final fun <get-isFailure>(): kotlin/Boolean // dev.sharingan.db/EventRow.isFailure.<get-isFailure>|<get-isFailure>(){}[0]
+    final val payloadJson // dev.sharingan.db/EventRow.payloadJson|{}payloadJson[0]
+        final fun <get-payloadJson>(): kotlin/String // dev.sharingan.db/EventRow.payloadJson.<get-payloadJson>|<get-payloadJson>(){}[0]
+    final val rawId // dev.sharingan.db/EventRow.rawId|{}rawId[0]
+        final fun <get-rawId>(): kotlin/String // dev.sharingan.db/EventRow.rawId.<get-rawId>|<get-rawId>(){}[0]
+    final val timestampMillis // dev.sharingan.db/EventRow.timestampMillis|{}timestampMillis[0]
+        final fun <get-timestampMillis>(): kotlin/Long // dev.sharingan.db/EventRow.timestampMillis.<get-timestampMillis>|<get-timestampMillis>(){}[0]
+    final val type // dev.sharingan.db/EventRow.type|{}type[0]
+        final fun <get-type>(): kotlin/String // dev.sharingan.db/EventRow.type.<get-type>|<get-type>(){}[0]
+
+    final fun component1(): kotlin/String // dev.sharingan.db/EventRow.component1|component1(){}[0]
+    final fun component2(): kotlin/Long // dev.sharingan.db/EventRow.component2|component2(){}[0]
+    final fun component3(): kotlin/String // dev.sharingan.db/EventRow.component3|component3(){}[0]
+    final fun component4(): kotlin/Boolean // dev.sharingan.db/EventRow.component4|component4(){}[0]
+    final fun component5(): kotlin/String? // dev.sharingan.db/EventRow.component5|component5(){}[0]
+    final fun component6(): kotlin/String // dev.sharingan.db/EventRow.component6|component6(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String = ...): dev.sharingan.db/EventRow // dev.sharingan.db/EventRow.copy|copy(kotlin.String;kotlin.Long;kotlin.String;kotlin.Boolean;kotlin.String?;kotlin.String){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.sharingan.db/EventRow.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.sharingan.db/EventRow.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.sharingan.db/EventRow.toString|toString(){}[0]
+}
+
+final class dev.sharingan.db/Session { // dev.sharingan.db/Session|null[0]
+    constructor <init>(kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?, kotlin/String?, kotlin/String?) // dev.sharingan.db/Session.<init>|<init>(kotlin.String;kotlin.Long;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
+
+    final val app_id // dev.sharingan.db/Session.app_id|{}app_id[0]
+        final fun <get-app_id>(): kotlin/String? // dev.sharingan.db/Session.app_id.<get-app_id>|<get-app_id>(){}[0]
+    final val build // dev.sharingan.db/Session.build|{}build[0]
+        final fun <get-build>(): kotlin/String? // dev.sharingan.db/Session.build.<get-build>|<get-build>(){}[0]
+    final val device_model // dev.sharingan.db/Session.device_model|{}device_model[0]
+        final fun <get-device_model>(): kotlin/String? // dev.sharingan.db/Session.device_model.<get-device_model>|<get-device_model>(){}[0]
+    final val id // dev.sharingan.db/Session.id|{}id[0]
+        final fun <get-id>(): kotlin/String // dev.sharingan.db/Session.id.<get-id>|<get-id>(){}[0]
+    final val os // dev.sharingan.db/Session.os|{}os[0]
+        final fun <get-os>(): kotlin/String? // dev.sharingan.db/Session.os.<get-os>|<get-os>(){}[0]
+    final val started_at // dev.sharingan.db/Session.started_at|{}started_at[0]
+        final fun <get-started_at>(): kotlin/Long // dev.sharingan.db/Session.started_at.<get-started_at>|<get-started_at>(){}[0]
+
+    final fun component1(): kotlin/String // dev.sharingan.db/Session.component1|component1(){}[0]
+    final fun component2(): kotlin/Long // dev.sharingan.db/Session.component2|component2(){}[0]
+    final fun component3(): kotlin/String? // dev.sharingan.db/Session.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // dev.sharingan.db/Session.component4|component4(){}[0]
+    final fun component5(): kotlin/String? // dev.sharingan.db/Session.component5|component5(){}[0]
+    final fun component6(): kotlin/String? // dev.sharingan.db/Session.component6|component6(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Long = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...): dev.sharingan.db/Session // dev.sharingan.db/Session.copy|copy(kotlin.String;kotlin.Long;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.sharingan.db/Session.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.sharingan.db/Session.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.sharingan.db/Session.toString|toString(){}[0]
+}
+
+final class dev.sharingan.db/SharinganDatabaseQueries : app.cash.sqldelight/TransacterImpl { // dev.sharingan.db/SharinganDatabaseQueries|null[0]
+    constructor <init>(app.cash.sqldelight.db/SqlDriver) // dev.sharingan.db/SharinganDatabaseQueries.<init>|<init>(app.cash.sqldelight.db.SqlDriver){}[0]
+
+    final fun <#A1: kotlin/Any> selectAllEvents(kotlin/Function7<kotlin/String, kotlin/String, kotlin/Long, kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?, #A1>): app.cash.sqldelight/Query<#A1> // dev.sharingan.db/SharinganDatabaseQueries.selectAllEvents|selectAllEvents(kotlin.Function7<kotlin.String,kotlin.String,kotlin.Long,kotlin.String,kotlin.Long,kotlin.String?,kotlin.String?,0:0>){0§<kotlin.Any>}[0]
+    final fun <#A1: kotlin/Any> selectAllSessions(kotlin/Function6<kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?, kotlin/String?, kotlin/String?, #A1>): app.cash.sqldelight/Query<#A1> // dev.sharingan.db/SharinganDatabaseQueries.selectAllSessions|selectAllSessions(kotlin.Function6<kotlin.String,kotlin.Long,kotlin.String?,kotlin.String?,kotlin.String?,kotlin.String?,0:0>){0§<kotlin.Any>}[0]
+    final fun <#A1: kotlin/Any> selectEventsForSession(kotlin/String, kotlin/Function7<kotlin/String, kotlin/String, kotlin/Long, kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?, #A1>): app.cash.sqldelight/Query<#A1> // dev.sharingan.db/SharinganDatabaseQueries.selectEventsForSession|selectEventsForSession(kotlin.String;kotlin.Function7<kotlin.String,kotlin.String,kotlin.Long,kotlin.String,kotlin.Long,kotlin.String?,kotlin.String?,0:0>){0§<kotlin.Any>}[0]
+    final fun <#A1: kotlin/Any> selectSession(kotlin/String, kotlin/Function6<kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?, kotlin/String?, kotlin/String?, #A1>): app.cash.sqldelight/Query<#A1> // dev.sharingan.db/SharinganDatabaseQueries.selectSession|selectSession(kotlin.String;kotlin.Function6<kotlin.String,kotlin.Long,kotlin.String?,kotlin.String?,kotlin.String?,kotlin.String?,0:0>){0§<kotlin.Any>}[0]
+    final fun deleteAllEvents() // dev.sharingan.db/SharinganDatabaseQueries.deleteAllEvents|deleteAllEvents(){}[0]
+    final fun deleteSession(kotlin/String) // dev.sharingan.db/SharinganDatabaseQueries.deleteSession|deleteSession(kotlin.String){}[0]
+    final fun insertEvent(kotlin/String, kotlin/String, kotlin/Long, kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?) // dev.sharingan.db/SharinganDatabaseQueries.insertEvent|insertEvent(kotlin.String;kotlin.String;kotlin.Long;kotlin.String;kotlin.Long;kotlin.String?;kotlin.String?){}[0]
+    final fun insertSession(kotlin/String, kotlin/Long, kotlin/String?, kotlin/String?, kotlin/String?, kotlin/String?) // dev.sharingan.db/SharinganDatabaseQueries.insertSession|insertSession(kotlin.String;kotlin.Long;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
+    final fun selectAllEvents(): app.cash.sqldelight/Query<dev.sharingan.db/Event> // dev.sharingan.db/SharinganDatabaseQueries.selectAllEvents|selectAllEvents(){}[0]
+    final fun selectAllSessions(): app.cash.sqldelight/Query<dev.sharingan.db/Session> // dev.sharingan.db/SharinganDatabaseQueries.selectAllSessions|selectAllSessions(){}[0]
+    final fun selectEventsForSession(kotlin/String): app.cash.sqldelight/Query<dev.sharingan.db/Event> // dev.sharingan.db/SharinganDatabaseQueries.selectEventsForSession|selectEventsForSession(kotlin.String){}[0]
+    final fun selectSession(kotlin/String): app.cash.sqldelight/Query<dev.sharingan.db/Session> // dev.sharingan.db/SharinganDatabaseQueries.selectSession|selectSession(kotlin.String){}[0]
+}

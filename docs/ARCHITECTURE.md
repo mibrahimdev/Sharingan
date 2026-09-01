@@ -7,7 +7,7 @@ Companion docs: [README.md](../README.md) (user-facing), [AGENTS.md](../AGENTS.m
 
 ## 1. System overview
 
-Sharingan is an on-device debug logger for Kotlin Multiplatform (Android API 24+, iOS arm64 + simulator arm64). It captures HTTP, MQTT and BLE traffic into an in-memory ring buffer, renders a Compose Multiplatform log browser, and exports events as agent-friendly Markdown / cURL / JSON / digest text. Nothing is ever persisted.
+Sharingan is an on-device debug logger for Kotlin Multiplatform (Android API 24+, iOS arm64 + simulator arm64). It captures HTTP, MQTT and BLE traffic into an in-memory ring buffer, renders a Compose Multiplatform log browser, and exports events as agent-friendly Markdown / cURL / JSON / digest text. Events live in an in-memory ring buffer (default 300) that is also mirrored to an on-device SQLite flight recorder via a write-behind seam; persistence is on by default in debug, and request/response bodies are never written to disk.
 
 ### Module map
 
@@ -105,7 +105,7 @@ All deliberate, all verifiable:
 - **Streaming never consumed.** `shouldReadBody()` refuses `text/event-stream` and anything non-textual (`isTextual()` whitelist: `text/*`, `*json`, `*xml`, form-urlencoded) — SSE and binary downloads keep streaming for the caller.
 - **Transport failures recorded then rethrown untouched** (catch block in the plugin's `on(Send)`): the app's error handling is never altered.
 - **Notification failures swallowed.** `manager.notify()` is wrapped in `try/catch(Exception)` in `CaptureNotification.post()`. This is a scar, not paranoia: commit `8550bbd` records a real crash where the API-26 version guard left the builder chain (`.setSmallIcon` etc.) attached only to the `else` branch, so API 26+ posted an icon-less notification and the resulting `IllegalArgumentException` from a background flow collector killed the host app. Rule extracted: **a debug tool must never crash the host app.**
-- **Memory-only ring buffer.** No disk, no network. Process death clears everything (a stated property, see §6).
+- **Memory-only ring buffer, mirrored on disk.** The ring buffer never touches the network; each event is mirrored to the SQLite flight recorder (§5.4). Process death clears the ring, not the recorder (a stated property, see §6).
 
 ### 2.5 UI architecture
 
@@ -219,9 +219,9 @@ For **WebSocket capture** specifically: Ktor's `WebSockets` plugin offers no equ
 
 The design explored three densities — **Terminal / Comfortable / Badged** — and only Terminal shipped (`TerminalRow` in [ui/HomeScreen.kt](../sharingan/src/commonMain/kotlin/dev/sharingan/ui/HomeScreen.kt); its doc comment names it "the design's default 'Terminal' density"). To add a variant: new `ComfortableRow`/`BadgedRow` composable beside `TerminalRow` consuming the same `EventPresentation`, a density value in `HomeUiState`, and a row-style picker in `HomeHeader`. `EventPresentation` already carries everything (`sub`, `sizeLabel`, tints) the richer variants need.
 
-### 5.4 Persist events
+### 5.4 Flight recorder (persistence)
 
-Today the buffer is deliberately memory-only. If persistence is ever wanted: keep `SharinganStore` as the hot interface and add an optional sink observing `store.events` (the pattern `CaptureNotification.start()` already uses); never make persistence the source of truth. Mind: redaction already happened at capture, but bodies may still hold PII — persisting changes the security posture, opt-in only.
+The in-memory ring buffer stays the source of truth. Each accepted Event is also mirrored to an on-device SQLite database by a write-behind seam: `SharinganStore.onRecord` (internal callback, invoked after the ring-buffer CAS append) → `PersistenceController` ([sharingan-db](../sharingan-db), SQLDelight). Persistence ships ON by default in debug. The Flight Recorder is a post-mortem log, never queried back into the UI and never the source of truth; one session row groups the Events of each process lifetime (a Run). Redaction applies before disk, and request/response bodies are never written to disk — persisting bodies would change the security posture and is deliberately out of scope.
 
 ### 5.5 Sample iosApp Xcode project
 
@@ -234,7 +234,7 @@ Add `sample/iosApp/` (standard KMP template: `iosApp.xcodeproj` + SwiftUI `Conte
 - **`SharinganScreen()` exists only in the debug artifact.** It is the one asymmetry in the API surface (deliberate: a noop composable would drag Compose into the release artifact). Never reference it from code compiled against the noop; use `Sharingan.show(context)` / `SharinganViewController()`, which *are* mirrored. Documented in [AGENTS.md](../AGENTS.md) and README §"Release builds".
 - **DND hides the notification.** The channel is `IMPORTANCE_LOW` and the notification silent (`CaptureNotification.ensureChannel`), so Do Not Disturb suppresses it on most devices. `Sharingan.show(context)` always works.
 - **`POST_NOTIFICATIONS` must be requested by the host app** on Android 13+. The library only *declares* the permission ([sharingan/src/androidMain/AndroidManifest.xml](../sharingan/src/androidMain/AndroidManifest.xml)); the sample shows the request ([MainActivity.kt](../sample/composeApp/src/androidMain/kotlin/dev/sharingan/sample/MainActivity.kt)). Without the grant, capture still works (`areNotificationsEnabled()` check + swallowed `notify()` failures), there's just no notification.
-- **Buffer lost on process death** — memory-only by design; capacity is per-store (`SharinganStore(capacity = …)`).
+- **Ring buffer lost on process death** — memory-only by design, so the ring resets each process; the flight recorder survives (§5.4). Capacity is per-store (`SharinganStore(capacity = …)`).
 - **The notification observer starts once per process** (`CaptureNotification.start` guards on `scope != null`) and survives for the process lifetime; `setNotificationEnabled(false)` cancels the posted notification but keeps observing.
 - **`HttpEvent.host/path` come from a naive string split** (`splitUrl` in `HttpEvent.kt`), not a URL parser — fine for display, don't reuse it for anything semantic.
 - **Request-body capture only sees `OutgoingContent.ByteArrayContent`** (`outgoingBodyText` in `ktor/SharinganKtor.kt`); streamed/chunked request bodies are not captured (responses: textual-only whitelist, SSE never read).
