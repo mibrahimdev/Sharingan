@@ -13,9 +13,11 @@ import kotlinx.serialization.json.Json
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
+internal expect fun startPlatformPersistence()
+
 /**
- * Starts persistence once per process. The only caller is Android's
- * manifest-merged ContentProvider — there is no Kotlin call site to grep.
+ * Starts persistence once per process. Android calls this from its
+ * manifest-merged ContentProvider; iOS starts it when the shared facade loads.
  * [stop] tears the wiring down so a new lifecycle can start again.
  *
  * ponytail: not unit-tested. [start] builds a real driver, and on Android
