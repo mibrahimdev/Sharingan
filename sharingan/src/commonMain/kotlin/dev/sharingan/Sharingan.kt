@@ -1,5 +1,6 @@
 package dev.sharingan
 
+import dev.sharingan.internal.startPlatformPersistence
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -25,6 +26,10 @@ import kotlinx.coroutines.flow.StateFlow
 public object Sharingan {
     /** The shared event buffer backing the notification and the log browser. */
     public val store: SharinganStore = SharinganStore()
+
+    init {
+        startPlatformPersistence()
+    }
 
     /** Manual HTTP logging (automatic when the `SharinganKtor` plugin is installed). */
     public val http: HttpLogger = HttpLogger(store)

@@ -38,6 +38,8 @@ kotlin {
             isStatic = false
             sharinganXCFramework.add(this)
         }
+        // :sharingan-db links system SQLite; test binaries need it too.
+        target.binaries.all { linkerOpts("-lsqlite3") }
     }
 
     sourceSets {

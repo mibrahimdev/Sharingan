@@ -15,6 +15,8 @@ Sharingan is an on-device debug logger for Kotlin Multiplatform (Android API 24+
 :sharingan            debug artifact — capture core + Ktor plugin + Compose UI
                       + Android notification/activity + iOS view controller
 :sharingan-noop       release artifact — same public API, inert bodies, no UI payload
+:sharingan-db         on-device SQLite flight recorder for persisted event sessions
+:ktlint-rules         custom lint rules for project-specific source conventions
 :sample:composeApp    demo app — deterministic IoT traffic via Ktor MockEngine;
                       can compile against either artifact (-Psharingan.noop)
 ```
@@ -221,7 +223,7 @@ The design explored three densities — **Terminal / Comfortable / Badged** — 
 
 ### 5.4 Flight recorder (persistence)
 
-The in-memory ring buffer stays the source of truth. Each accepted Event is also mirrored to an on-device SQLite database by a write-behind seam: `SharinganStore.onRecord` (internal callback, invoked after the ring-buffer CAS append) → `PersistenceController` ([sharingan-db](../sharingan-db), SQLDelight). Persistence ships ON by default in debug. The Flight Recorder is a post-mortem log, never queried back into the UI and never the source of truth; one session row groups the Events of each process lifetime (a Run). Redaction applies before disk, and request/response bodies are never written to disk — persisting bodies would change the security posture and is deliberately out of scope.
+The **Store** remains the live source of truth for the **Current Session**. Each accepted Event is also mirrored to the on-device SQLite **Flight Recorder** by a write-behind seam: `SharinganStore.onRecord` (internal callback, invoked after the ring-buffer CAS append) → `PersistenceController` ([sharingan-db](../sharingan-db), SQLDelight). Persistence ships ON by default in debug. The Flight Recorder is queried on demand to list or inspect **Past Sessions**; each session groups the Events of one process lifetime. Redaction applies before disk, and request/response bodies are never written to disk — persisting bodies would change the security posture and is deliberately out of scope.
 
 ### 5.5 Sample iosApp Xcode project
 

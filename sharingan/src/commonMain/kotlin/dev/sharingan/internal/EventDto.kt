@@ -1,9 +1,12 @@
 package dev.sharingan.internal
 
 import dev.sharingan.BleEvent
+import dev.sharingan.BleOperation
 import dev.sharingan.HttpEvent
+import dev.sharingan.MqttDirection
 import dev.sharingan.MqttEvent
 import dev.sharingan.SharinganEvent
+import dev.sharingan.TimingPhase
 import kotlinx.serialization.Serializable
 
 /**
@@ -11,8 +14,8 @@ import kotlinx.serialization.Serializable
  * blob. A separate internal type because the #15 ABI freeze forbids adding
  * `@Serializable` to the public events.
  *
- * Encode-only ([fromEvent]). Every field is mirrored and enums carried by name
- * so a decoder can be added without a format change.
+ * Every field is mirrored and enums carried by name so the on-disk payload can
+ * reconstruct events without changing the public ABI.
  */
 @Serializable
 internal sealed interface EventDto {
@@ -67,6 +70,51 @@ internal sealed interface EventDto {
             }
     }
 }
+
+internal fun EventDto.toEvent(): SharinganEvent =
+    when (this) {
+        is HttpDto ->
+            HttpEvent(
+                id = id,
+                timestampMillis = timestampMillis,
+                method = method,
+                url = url,
+                statusCode = statusCode,
+                durationMillis = durationMillis,
+                requestHeaders = requestHeaders.map { it.name to it.value },
+                responseHeaders = responseHeaders.map { it.name to it.value },
+                requestBody = requestBody,
+                responseBody = responseBody,
+                contentType = contentType,
+                responseSizeBytes = responseSizeBytes,
+                timing = timing.map { TimingPhase(it.label, it.millis) },
+                error = error,
+            )
+        is MqttDto ->
+            MqttEvent(
+                id = id,
+                timestampMillis = timestampMillis,
+                direction = MqttDirection.valueOf(direction),
+                topic = topic,
+                qos = qos,
+                retained = retained,
+                payload = payload,
+                payloadSizeBytes = payloadSizeBytes,
+                error = error,
+            )
+        is BleDto ->
+            BleEvent(
+                id = id,
+                timestampMillis = timestampMillis,
+                operation = BleOperation.valueOf(operation),
+                device = device,
+                characteristic = characteristic,
+                uuid = uuid,
+                payload = payload,
+                sizeBytes = sizeBytes,
+                error = error,
+            )
+    }
 
 @Serializable
 internal data class HeaderDto(

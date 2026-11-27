@@ -55,6 +55,8 @@ internal data class HomeUiState(
     val query: String,
     val chipKey: String,
     val recording: Boolean,
+    val pastSession: Boolean = false,
+    val sessionLabel: String = "Current session ▾",
 )
 
 @Composable
@@ -66,12 +68,22 @@ internal fun HomeScreenContent(
     onToggleRecording: () -> Unit,
     onOpenEvent: (SharinganEvent) -> Unit,
     onShareAll: () -> Unit,
+    onOpenSessionPicker: () -> Unit = {},
+    onReturnToLive: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSharinganColors.current
     Column(modifier.fillMaxSize().background(colors.bg)) {
         Column(Modifier.fillMaxWidth().background(colors.bgElev)) {
-            HomeHeader(recording = state.recording, onToggleRecording = onToggleRecording, onShareAll = onShareAll)
+            HomeHeader(
+                recording = state.recording,
+                pastSession = state.pastSession,
+                sessionLabel = state.sessionLabel,
+                onToggleRecording = onToggleRecording,
+                onOpenSessionPicker = onOpenSessionPicker,
+                onReturnToLive = onReturnToLive,
+                onShareAll = onShareAll,
+            )
             TabBar(selected = state.protocol, counts = state.counts, onSelect = onSelectProtocol)
             SearchField(
                 protocol = state.protocol,
@@ -91,6 +103,7 @@ internal fun HomeScreenContent(
             count = state.rows.size,
             noun = state.protocol.eventNoun(),
             recording = state.recording,
+            pastSession = state.pastSession,
         )
         if (state.rows.isEmpty()) {
             EmptyState(hasAny = (state.counts[state.protocol] ?: 0) > 0)
@@ -107,7 +120,11 @@ internal fun HomeScreenContent(
 @Composable
 private fun HomeHeader(
     recording: Boolean,
+    pastSession: Boolean,
+    sessionLabel: String,
     onToggleRecording: () -> Unit,
+    onOpenSessionPicker: () -> Unit,
+    onReturnToLive: () -> Unit,
     onShareAll: () -> Unit,
 ) {
     val colors = LocalSharinganColors.current
@@ -125,7 +142,12 @@ private fun HomeHeader(
             fontFamily = SansFont,
             modifier = Modifier.weight(1f),
         )
-        RecordingPill(recording = recording, onToggle = onToggleRecording)
+        SessionSelectorPill(label = sessionLabel, onClick = onOpenSessionPicker)
+        if (pastSession) {
+            LiveReturnPill(onClick = onReturnToLive)
+        } else {
+            RecordingPill(recording = recording, onToggle = onToggleRecording)
+        }
         Box(
             Modifier
                 .size(32.dp)
@@ -138,6 +160,50 @@ private fun HomeHeader(
             Icon(SharinganIcons.Share, contentDescription = "Share session", tint = colors.textMid, modifier = Modifier.size(16.dp))
         }
     }
+}
+
+@Composable
+private fun SessionSelectorPill(
+    label: String,
+    onClick: () -> Unit,
+) {
+    val colors = LocalSharinganColors.current
+    Text(
+        label,
+        color = colors.textMid,
+        fontSize = 10.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFamily = MonoFont,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.surface)
+                .border(1.dp, colors.border, RoundedCornerShape(20.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 9.dp, vertical = 7.dp),
+    )
+}
+
+@Composable
+private fun LiveReturnPill(onClick: () -> Unit) {
+    val colors = LocalSharinganColors.current
+    Text(
+        "↩ Live",
+        color = colors.accent,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        fontFamily = MonoFont,
+        maxLines = 1,
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.accentSoft)
+                .border(1.dp, colors.accent, RoundedCornerShape(20.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 9.dp, vertical = 7.dp),
+    )
 }
 
 @Composable
@@ -327,8 +393,15 @@ private fun ColumnHeader(
     count: Int,
     noun: String,
     recording: Boolean,
+    pastSession: Boolean,
 ) {
     val colors = LocalSharinganColors.current
+    val status =
+        when {
+            pastSession -> "past session"
+            recording -> "● live"
+            else -> "paused"
+        }
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -342,8 +415,8 @@ private fun ColumnHeader(
             modifier = Modifier.weight(1f),
         )
         Text(
-            if (recording) "● live" else "paused",
-            color = if (recording) colors.textDim else colors.warn,
+            status,
+            color = if (pastSession || recording) colors.textDim else colors.warn,
             fontSize = 10.5.sp,
             fontFamily = MonoFont,
         )

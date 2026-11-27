@@ -404,4 +404,65 @@ internal class PersistenceControllerTest {
 
             controller.close()
         }
+
+    @Test
+    fun `Given committed sessions When past sessions are queried Then current empty and failures are handled`() =
+        runBlocking {
+            val driver = createTestDriver()
+            val controller = PersistenceController<EventRow>(toRow = { it }, driver = driver)
+            val flushed = CompletableDeferred<Unit>()
+            controller.onBatchFlushed = { flushed.complete(Unit) }
+            controller.start()
+            controller.submit(event("current"))
+            withTimeout(10_000) { flushed.await() }
+
+            val queries = SharinganDatabase(driver).sharinganDatabaseQueries
+            queries.insertSession("older", 1_000L, null, null, null, null)
+            queries.insertSession("newer", 2_000L, null, null, null, null)
+            queries.insertSession("empty", 3_000L, null, null, null, null)
+            queries.insertEvent("older-event", "older", 1_100L, "HTTP", 0L, null, """{"id":"older"}""")
+            queries.insertEvent("newer-event", "newer", 2_100L, "HTTP", 0L, null, """{"id":"newer"}""")
+            queries.insertEvent("newer-failure", "newer", 2_200L, "HTTP", 1L, null, """{"id":"failure"}""")
+            queries.insertEvent("newer-without-payload", "newer", 2_300L, "HTTP", 0L, null, null)
+
+            assertEquals(
+                listOf(
+                    SessionSummary("newer", 2_000L, 3, 1),
+                    SessionSummary("older", 1_000L, 1, 0),
+                ),
+                controller.pastSessions(),
+            )
+            assertEquals(listOf("""{"id":"newer"}""", """{"id":"failure"}"""), controller.sessionEvents("newer"))
+
+            controller.close()
+        }
+
+    @Test
+    fun `Given current and past session events When current session is cleared Then past events remain`() =
+        runBlocking {
+            val driver = createTestDriver()
+            val controller = PersistenceController<EventRow>(toRow = { it }, driver = driver)
+            val flushed = CompletableDeferred<Unit>()
+            controller.onBatchFlushed = { flushed.complete(Unit) }
+            controller.start()
+            controller.submit(event("current"))
+            withTimeout(10_000) { flushed.await() }
+
+            val currentSessionId = controller.currentSessionId
+            assertTrue(currentSessionId != null)
+            val queries = SharinganDatabase(driver).sharinganDatabaseQueries
+            queries.insertSession("past", 1_000L, null, null, null, null)
+            queries.insertEvent("past-event", "past", 1_100L, "HTTP", 0L, null, """{"id":"past"}""")
+
+            val cleared = CompletableDeferred<Unit>()
+            controller.onCleared = { cleared.complete(Unit) }
+            controller.clear()
+            withTimeout(10_000) { cleared.await() }
+
+            val events = queries.selectAllEvents().executeAsList()
+            assertEquals(listOf("past-event"), events.map { it.id })
+            assertEquals(listOf("past"), controller.pastSessions().map { it.id })
+
+            controller.close()
+        }
 }

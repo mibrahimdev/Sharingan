@@ -140,4 +140,4 @@ Issues and specs live as GitHub issues (`mibrahimdev/Sharingan`); use the `gh` C
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Domain docs use `GLOSSARY.md` for a single context or `GLOSSARY-MAP.md` for multiple contexts. See `docs/agents/domain.md`.
