@@ -32,8 +32,6 @@ internal object Persistence {
     private var controller: PersistenceController<SharinganEvent>? = null
     private var store: SharinganStore? = null
 
-    val currentSessionId: String? get() = controller?.currentSessionId
-
     fun pastSessions(): List<SessionSummary> = controller?.pastSessions().orEmpty()
 
     fun sessionEvents(sessionId: String): List<SharinganEvent> =

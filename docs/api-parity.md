@@ -56,9 +56,10 @@ consumer-facing public API:
 
 - `:sample:composeApp` — the sample application, not a published library.
 - `:sharingan-db` — the on-device SQLDelight database is an implementation
-detail of `:sharingan`. Its generated surface changes with every schema edit in
-slices 3–5, and no consumer codes against it. It is published only as a
-required runtime dependency of `:sharingan`.
+detail of `:sharingan`. It is BCV-guarded like `:sharingan` itself, but its
+generated surface is **not** compared against `:sharingan-noop` (it is an
+implementation dependency, not a consumer-facing twin). Its schema and public
+query API evolve with slices 3–5.
 
 In CI it runs as the `api-parity` job in
 [`.github/workflows/api-check.yml`](../.github/workflows/api-check.yml), on a cheap
