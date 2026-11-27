@@ -6,7 +6,9 @@ import dev.sharingan.HttpEvent
 import dev.sharingan.HttpLogger
 import dev.sharingan.MqttDirection
 import dev.sharingan.MqttEvent
+import dev.sharingan.TimingPhase
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 internal class EventDtoTest {
@@ -125,5 +127,62 @@ internal class EventDtoTest {
         assertTrue("\"operation\":\"CONNECT\"" in encoded)
         assertTrue("\"device\":\"Scale-B2\"" in encoded)
         assertTrue("\"error\":\"GATT 133\"" in encoded)
+    }
+
+    @Test
+    fun `Given protocol events When DTOs are reconstructed Then every field is preserved`() {
+        val events =
+            listOf(
+                HttpEvent(
+                    id = "http-1",
+                    timestampMillis = 1_700_000_000_001L,
+                    method = "POST",
+                    url = "https://api.example.com/path?q=1",
+                    statusCode = 201,
+                    durationMillis = 125,
+                    requestHeaders = listOf("Content-Type" to "application/json"),
+                    responseHeaders = listOf("X-Request-Id" to "abc"),
+                    requestBody = """{"name":"Ada"}""",
+                    responseBody = """{"id":1}""",
+                    contentType = "application/json",
+                    responseSizeBytes = 42,
+                    timing = listOf(TimingPhase("TTFB", 70)),
+                ),
+                MqttEvent(
+                    id = "mqtt-1",
+                    timestampMillis = 1_700_000_000_002L,
+                    direction = MqttDirection.RECEIVE,
+                    topic = "devices/1/status",
+                    qos = 2,
+                    retained = true,
+                    payload = """{"online":true}""",
+                    payloadSizeBytes = 15,
+                    error = "decode warning",
+                ),
+                BleEvent(
+                    id = "ble-1",
+                    timestampMillis = 1_700_000_000_003L,
+                    operation = BleOperation.READ,
+                    device = "HR-Monitor",
+                    characteristic = "Heart Rate",
+                    uuid = "0x2A37",
+                    payload = """{"bpm":72}""",
+                    sizeBytes = 8,
+                    error = "read failed",
+                ),
+            )
+
+        events.forEach { event ->
+            assertEquals(event, EventDto.fromEvent(event).toEvent())
+
+            val withoutBodies =
+                when (event) {
+                    is HttpEvent -> event.copy(requestBody = null, responseBody = null)
+                    is MqttEvent -> event.copy(payload = null)
+                    is BleEvent -> event.copy(payload = null)
+                }
+            val persisted = json.decodeFromString(EventDto.serializer(), toRow(event).payloadJson).toEvent()
+            assertEquals(withoutBodies, persisted)
+        }
     }
 }

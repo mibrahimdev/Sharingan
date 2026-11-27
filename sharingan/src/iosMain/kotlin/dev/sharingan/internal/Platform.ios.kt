@@ -18,3 +18,13 @@ private val clockFormatter: NSDateFormatter by lazy {
 
 internal actual fun formatClockTime(epochMillis: Long): String =
     clockFormatter.stringFromDate(NSDate.dateWithTimeIntervalSince1970(epochMillis / 1000.0))
+
+private val dateTimeFormatter: NSDateFormatter by lazy {
+    NSDateFormatter().apply {
+        dateFormat = "MMM d, yyyy HH:mm"
+        locale = NSLocale.localeWithLocaleIdentifier("en_US_POSIX")
+    }
+}
+
+internal actual fun formatDateTime(epochMillis: Long): String =
+    dateTimeFormatter.stringFromDate(NSDate.dateWithTimeIntervalSince1970(epochMillis / 1000.0))

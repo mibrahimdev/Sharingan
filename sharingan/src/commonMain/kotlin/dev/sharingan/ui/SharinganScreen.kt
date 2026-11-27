@@ -28,7 +28,13 @@ import dev.sharingan.HttpEvent
 import dev.sharingan.Sharingan
 import dev.sharingan.SharinganEvent
 import dev.sharingan.SharinganStore
+import dev.sharingan.db.SessionSummary
+import dev.sharingan.internal.Persistence
+import dev.sharingan.internal.formatDateTime
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Sheet hosts sit below the status bar, so the top inset would be paid twice (#42); full-screen hosts still need it.
 internal val LocalStripTopInset = staticCompositionLocalOf { false }
@@ -64,6 +70,12 @@ public fun SharinganScreen(
     var protocolName by rememberSaveable { mutableStateOf(Protocol.HTTP.name) }
     val protocol = Protocol.valueOf(protocolName)
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSessionStartedAt by rememberSaveable { mutableStateOf<Long?>(null) }
+    var sessionEvents by remember { mutableStateOf<List<SharinganEvent>?>(null) }
+    var sessionPickerOpen by remember { mutableStateOf(false) }
+    var pastSessions by remember { mutableStateOf<List<SessionSummary>>(emptyList()) }
+    var loadingPastSessions by remember { mutableStateOf(false) }
     var shareScope by remember { mutableStateOf<ShareScope?>(null) }
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
@@ -71,21 +83,36 @@ public fun SharinganScreen(
     var query by remember(protocol) { mutableStateOf("") }
     var chipKey by remember(protocol) { mutableStateOf("all") }
 
+    val activeEvents = sessionEvents ?: events
     val counts =
-        remember(events) {
-            Protocol.entries.associateWith { p -> events.count { protocolOf(it) == p } }
+        remember(activeEvents) {
+            Protocol.entries.associateWith { p -> activeEvents.count { protocolOf(it) == p } }
         }
     val rows =
-        remember(events, protocol, chipKey, query) {
-            visibleEvents(events, protocol, chipKey, query)
+        remember(activeEvents, protocol, chipKey, query) {
+            visibleEvents(activeEvents, protocol, chipKey, query)
         }
-    val selectedEvent = selectedId?.let { id -> events.firstOrNull { it.id == id } }
-    val tabEvents = remember(events, protocol) { events.filter { protocolOf(it) == protocol } }
+    val selectedEvent = selectedId?.let { id -> activeEvents.firstOrNull { it.id == id } }
+    val tabEvents = remember(activeEvents, protocol) { activeEvents.filter { protocolOf(it) == protocol } }
 
     LaunchedEffect(toastMessage) {
         if (toastMessage != null) {
             delay(2200)
             toastMessage = null
+        }
+    }
+
+    LaunchedEffect(sessionPickerOpen) {
+        if (sessionPickerOpen) {
+            loadingPastSessions = true
+            pastSessions = withContext(Dispatchers.Default) { Persistence.pastSessions() }
+            loadingPastSessions = false
+        }
+    }
+
+    LaunchedEffect(selectedSessionId) {
+        selectedSessionId?.let { id ->
+            sessionEvents = withContext(Dispatchers.Default) { Persistence.sessionEvents(id) }
         }
     }
 
@@ -109,7 +136,22 @@ public fun SharinganScreen(
                     query = query,
                     chipKey = chipKey,
                     recording = recording,
+                    pastSession = selectedSessionId != null,
+                    sessionLabel =
+                        selectedSessionStartedAt?.let(::formatDateTime)
+                            ?: if (selectedSessionId == null) "Current session ▾" else "Past session",
                 ),
+            sessionPickerState =
+                if (sessionPickerOpen) {
+                    SessionPickerState(
+                        currentEventCount = events.size,
+                        pastSessions = pastSessions,
+                        selectedSessionId = selectedSessionId,
+                        isLoading = loadingPastSessions,
+                    )
+                } else {
+                    null
+                },
             selectedEvent = selectedEvent,
             shareState = shareState,
             toastMessage = toastMessage,
@@ -122,6 +164,30 @@ public fun SharinganScreen(
             onToggleRecording = { store.setRecording(!recording) },
             onOpenEvent = { selectedId = it.id },
             onBack = { selectedId = null },
+            onOpenSessionPicker = { sessionPickerOpen = true },
+            onSelectCurrentSession = {
+                selectedId = null
+                selectedSessionId = null
+                selectedSessionStartedAt = null
+                sessionEvents = null
+                sessionPickerOpen = false
+            },
+            onSelectPastSession = { session ->
+                selectedId = null
+                if (selectedSessionId != session.id || sessionEvents == null) {
+                    sessionEvents = emptyList()
+                    selectedSessionId = session.id
+                }
+                selectedSessionStartedAt = session.startedAtMillis
+                sessionPickerOpen = false
+            },
+            onReturnToLive = {
+                selectedId = null
+                selectedSessionId = null
+                selectedSessionStartedAt = null
+                sessionEvents = null
+            },
+            onSessionPickerDismiss = { sessionPickerOpen = false },
             onShareSingle = { shareScope = ShareScope.SINGLE },
             onShareAll = { shareScope = ShareScope.ALL },
             onShareAction = { action ->
@@ -143,6 +209,7 @@ public fun SharinganScreen(
 @Composable
 internal fun SharinganScreenContent(
     homeState: HomeUiState,
+    sessionPickerState: SessionPickerState?,
     selectedEvent: SharinganEvent?,
     shareState: ShareSheetState?,
     toastMessage: String?,
@@ -152,6 +219,11 @@ internal fun SharinganScreenContent(
     onToggleRecording: () -> Unit,
     onOpenEvent: (SharinganEvent) -> Unit,
     onBack: () -> Unit,
+    onOpenSessionPicker: () -> Unit,
+    onSelectCurrentSession: () -> Unit,
+    onSelectPastSession: (SessionSummary) -> Unit,
+    onReturnToLive: () -> Unit,
+    onSessionPickerDismiss: () -> Unit,
     onShareSingle: () -> Unit,
     onShareAll: () -> Unit,
     onShareAction: (ShareAction) -> Unit,
@@ -184,6 +256,8 @@ internal fun SharinganScreenContent(
                         onToggleRecording = onToggleRecording,
                         onOpenEvent = onOpenEvent,
                         onShareAll = onShareAll,
+                        onOpenSessionPicker = onOpenSessionPicker,
+                        onReturnToLive = onReturnToLive,
                     )
                 }
                 SharinganToast(toastMessage, Modifier.align(Alignment.BottomCenter))
@@ -192,5 +266,52 @@ internal fun SharinganScreenContent(
         if (shareState != null) {
             ShareSheet(state = shareState, onAction = onShareAction, onDismiss = onShareDismiss)
         }
+        if (sessionPickerState != null) {
+            SessionPickerSheet(
+                state = sessionPickerState,
+                onSelectCurrent = onSelectCurrentSession,
+                onSelectPast = onSelectPastSession,
+                onDismiss = onSessionPickerDismiss,
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun SharinganScreenContent_PastSessionPreview() {
+    SharinganTheme(darkTheme = false) {
+        SharinganScreenContent(
+            homeState =
+                HomeUiState(
+                    protocol = Protocol.HTTP,
+                    counts = previewCounts(),
+                    rows = PreviewData.http,
+                    query = "",
+                    chipKey = "all",
+                    recording = true,
+                    pastSession = true,
+                    sessionLabel = "Jun 10, 2025 14:22",
+                ),
+            sessionPickerState = null,
+            selectedEvent = null,
+            shareState = null,
+            toastMessage = null,
+            onSelectProtocol = {},
+            onQueryChange = {},
+            onChipChange = {},
+            onToggleRecording = {},
+            onOpenEvent = {},
+            onBack = {},
+            onOpenSessionPicker = {},
+            onSelectCurrentSession = {},
+            onSelectPastSession = {},
+            onReturnToLive = {},
+            onSessionPickerDismiss = {},
+            onShareSingle = {},
+            onShareAll = {},
+            onShareAction = {},
+            onShareDismiss = {},
+        )
     }
 }

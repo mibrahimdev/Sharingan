@@ -8,6 +8,7 @@ import dev.sharingan.SharinganEvent
 import dev.sharingan.SharinganStore
 import dev.sharingan.db.EventRow
 import dev.sharingan.db.PersistenceController
+import dev.sharingan.db.SessionSummary
 import kotlinx.serialization.json.Json
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -28,6 +29,16 @@ internal object Persistence {
     private val started = AtomicBoolean(false)
     private var controller: PersistenceController<SharinganEvent>? = null
     private var store: SharinganStore? = null
+
+    val currentSessionId: String? get() = controller?.currentSessionId
+
+    fun pastSessions(): List<SessionSummary> = controller?.pastSessions().orEmpty()
+
+    fun sessionEvents(sessionId: String): List<SharinganEvent> =
+        controller
+            ?.sessionEvents(sessionId)
+            .orEmpty()
+            .mapNotNull { payload -> runCatching { json.decodeFromString(EventDto.serializer(), payload).toEvent() }.getOrNull() }
 
     fun start(store: SharinganStore = Sharingan.store) {
         if (!started.compareAndSet(false, true)) return

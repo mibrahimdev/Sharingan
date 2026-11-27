@@ -292,6 +292,12 @@ public final class dev/sharingan/ui/ComposableSingletons$HomeScreenKt {
 	public final fun getLambda$140966640$io_github_mibrahimdev_sharingan_release ()Lkotlin/jvm/functions/Function2;
 }
 
+public final class dev/sharingan/ui/ComposableSingletons$SessionPickerSheetKt {
+	public static final field INSTANCE Ldev/sharingan/ui/ComposableSingletons$SessionPickerSheetKt;
+	public fun <init> ()V
+	public final fun getLambda$134908413$io_github_mibrahimdev_sharingan_release ()Lkotlin/jvm/functions/Function2;
+}
+
 public final class dev/sharingan/ui/ComposableSingletons$ShareSheetKt {
 	public static final field INSTANCE Ldev/sharingan/ui/ComposableSingletons$ShareSheetKt;
 	public fun <init> ()V
@@ -301,6 +307,12 @@ public final class dev/sharingan/ui/ComposableSingletons$ShareSheetKt {
 	public final fun getLambda$1258238139$io_github_mibrahimdev_sharingan_release ()Lkotlin/jvm/functions/Function2;
 	public final fun getLambda$1508255784$io_github_mibrahimdev_sharingan_release ()Lkotlin/jvm/functions/Function3;
 	public final fun getLambda$1942219465$io_github_mibrahimdev_sharingan_release ()Lkotlin/jvm/functions/Function3;
+}
+
+public final class dev/sharingan/ui/ComposableSingletons$SharinganScreenKt {
+	public static final field INSTANCE Ldev/sharingan/ui/ComposableSingletons$SharinganScreenKt;
+	public fun <init> ()V
+	public final fun getLambda$-58490654$io_github_mibrahimdev_sharingan_release ()Lkotlin/jvm/functions/Function2;
 }
 
 public final class dev/sharingan/ui/SharinganScreenKt {
