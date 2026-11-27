@@ -34,6 +34,17 @@ SELECT * FROM session WHERE id = ?;
 selectEventsForSession:
 SELECT * FROM event WHERE session_id = ? ORDER BY timestamp ASC;
 
+selectPastSessions:
+SELECT session.id, session.started_at,
+       COUNT(event.id) AS eventCount,
+       COALESCE(SUM(CASE WHEN event.is_failure = 1 THEN 1 ELSE 0 END), 0) AS failureCount
+FROM session
+LEFT JOIN event ON event.session_id = session.id
+WHERE (:excludeId IS NULL OR session.id != :excludeId)
+GROUP BY session.id
+HAVING COUNT(event.id) > 0
+ORDER BY session.started_at DESC;
+
 selectAllSessions:
 SELECT * FROM session ORDER BY started_at ASC;
 
@@ -45,3 +56,6 @@ DELETE FROM session WHERE id = ?;
 
 deleteAllEvents:
 DELETE FROM event;
+
+deleteEventsForSession:
+DELETE FROM event WHERE session_id = ?;

@@ -47,9 +47,29 @@ public final class dev/sharingan/db/PersistenceController {
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun clear ()V
 	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getCurrentSessionId ()Ljava/lang/String;
+	public final fun pastSessions ()Ljava/util/List;
+	public final fun sessionEvents (Ljava/lang/String;)Ljava/util/List;
 	public final fun start ()V
 	public final fun stop (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun submit (Ljava/lang/Object;)V
+}
+
+public final class dev/sharingan/db/SelectPastSessions {
+	public fun <init> (Ljava/lang/String;JJJ)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun copy (Ljava/lang/String;JJJ)Ldev/sharingan/db/SelectPastSessions;
+	public static synthetic fun copy$default (Ldev/sharingan/db/SelectPastSessions;Ljava/lang/String;JJJILjava/lang/Object;)Ldev/sharingan/db/SelectPastSessions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEventCount ()J
+	public final fun getFailureCount ()J
+	public final fun getId ()Ljava/lang/String;
+	public final fun getStarted_at ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class dev/sharingan/db/Session {
@@ -73,6 +93,23 @@ public final class dev/sharingan/db/Session {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class dev/sharingan/db/SessionSummary {
+	public fun <init> (Ljava/lang/String;JII)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun copy (Ljava/lang/String;JII)Ldev/sharingan/db/SessionSummary;
+	public static synthetic fun copy$default (Ldev/sharingan/db/SessionSummary;Ljava/lang/String;JIIILjava/lang/Object;)Ldev/sharingan/db/SessionSummary;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEventCount ()I
+	public final fun getFailureCount ()I
+	public final fun getId ()Ljava/lang/String;
+	public final fun getStartedAtMillis ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class dev/sharingan/db/SharinganDatabase : app/cash/sqldelight/Transacter {
 	public static final field Companion Ldev/sharingan/db/SharinganDatabase$Companion;
 	public abstract fun getSharinganDatabaseQueries ()Ldev/sharingan/db/SharinganDatabaseQueries;
@@ -86,6 +123,7 @@ public final class dev/sharingan/db/SharinganDatabase$Companion {
 public final class dev/sharingan/db/SharinganDatabaseQueries : app/cash/sqldelight/TransacterImpl {
 	public fun <init> (Lapp/cash/sqldelight/db/SqlDriver;)V
 	public final fun deleteAllEvents ()V
+	public final fun deleteEventsForSession (Ljava/lang/String;)V
 	public final fun deleteSession (Ljava/lang/String;)V
 	public final fun insertEvent (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;Ljava/lang/String;)V
 	public final fun insertSession (Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
@@ -95,6 +133,8 @@ public final class dev/sharingan/db/SharinganDatabaseQueries : app/cash/sqldelig
 	public final fun selectAllSessions (Lkotlin/jvm/functions/Function6;)Lapp/cash/sqldelight/Query;
 	public final fun selectEventsForSession (Ljava/lang/String;)Lapp/cash/sqldelight/Query;
 	public final fun selectEventsForSession (Ljava/lang/String;Lkotlin/jvm/functions/Function7;)Lapp/cash/sqldelight/Query;
+	public final fun selectPastSessions (Ljava/lang/String;)Lapp/cash/sqldelight/Query;
+	public final fun selectPastSessions (Ljava/lang/String;Lkotlin/jvm/functions/Function4;)Lapp/cash/sqldelight/Query;
 	public final fun selectSession (Ljava/lang/String;)Lapp/cash/sqldelight/Query;
 	public final fun selectSession (Ljava/lang/String;Lkotlin/jvm/functions/Function6;)Lapp/cash/sqldelight/Query;
 }

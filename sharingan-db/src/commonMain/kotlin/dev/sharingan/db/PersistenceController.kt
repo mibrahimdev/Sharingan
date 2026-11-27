@@ -78,6 +78,7 @@ public class PersistenceController<T : Any> private constructor(
 
     // AtomicReference so a racing stop() can't read a stale null and skip the join.
     private val flusherJob = AtomicReference<Job?>(null)
+    private val _currentSessionId = AtomicReference<String?>(null)
 
     // Terminal flag; the controller is single-use once stopped.
     private val stopped = AtomicBoolean(false)
@@ -96,6 +97,23 @@ public class PersistenceController<T : Any> private constructor(
     /** Test seam: flusher coroutines that actually started. */
     internal fun flusherStartCount(): Int = flusherStarts.load()
 
+    /** Session id committed for events recorded during this process lifetime. */
+    public val currentSessionId: String? get() = _currentSessionId.load()
+
+    /** Past sessions with at least one event, newest first. */
+    public fun pastSessions(): List<SessionSummary> =
+        database.sharinganDatabaseQueries
+            .selectPastSessions(excludeId = currentSessionId)
+            .executeAsList()
+            .map { SessionSummary(it.id, it.started_at, it.eventCount.toInt(), it.failureCount.toInt()) }
+
+    /** Persisted event payloads for [sessionId], oldest first; rows without payloads are omitted. */
+    public fun sessionEvents(sessionId: String): List<String> =
+        database.sharinganDatabaseQueries
+            .selectEventsForSession(sessionId)
+            .executeAsList()
+            .mapNotNull { it.payload_json }
+
     /**
      * Wires the seam and starts the flusher. Idempotent before [stop]; after
      * [stop] the controller is single-use and [start] throws.
@@ -113,7 +131,7 @@ public class PersistenceController<T : Any> private constructor(
     }
 
     /**
-     * Deletes every persisted row and discards whatever is still queued or
+     * Deletes current-session rows and discards whatever is still queued or
      * held in the flusher's in-flight batch. Enqueued as a command on the same
      * channel the writes travel on, so the single flusher coroutine applies it
      * at an exact point in the write order — events recorded before [clear]
@@ -121,7 +139,7 @@ public class PersistenceController<T : Any> private constructor(
      * survive. No locks, no resurrection window.
      */
     public fun clear() {
-        channel.trySend(Command.ClearAll)
+        channel.trySend(Command.ClearCurrent)
     }
 
     /**
@@ -180,9 +198,9 @@ public class PersistenceController<T : Any> private constructor(
                     batch.add(event)
                     if (batch.size >= batchSize) flush(batch)
                 }
-                is Command.ClearAll -> {
+                is Command.ClearCurrent -> {
                     batch.clear()
-                    database.sharinganDatabaseQueries.deleteAllEvents()
+                    sessionId?.let(database.sharinganDatabaseQueries::deleteEventsForSession)
                     onCleared?.invoke()
                 }
                 null -> flush(batch)
@@ -204,11 +222,17 @@ public class PersistenceController<T : Any> private constructor(
                 if (isNewSession) insertSession(session)
                 rows.forEach { persist(it, session) }
             }
-            if (isNewSession) sessionId = session
+            if (isNewSession) {
+                sessionId = session
+                _currentSessionId.store(session)
+            }
             onBatchFlushed?.invoke(rows.size)
         } catch (t: Throwable) {
             // Reset the session in case its row rolled back with this transaction.
-            if (isNewSession) sessionId = null
+            if (isNewSession) {
+                sessionId = null
+                _currentSessionId.store(null)
+            }
             // ponytail: println is the whole story — no logging facility exists; route through a real one if it ever gains one.
             println("Sharingan persistence: dropped a batch of ${snapshot.size} events ($t)")
         }
@@ -256,7 +280,7 @@ private sealed interface Command<out T> {
         val event: T,
     ) : Command<T>
 
-    data object ClearAll : Command<Nothing>
+    data object ClearCurrent : Command<Nothing>
 }
 
 // UUID, not timestamp+Random: the latter collides on Kotlin/Native under rapid calls.
